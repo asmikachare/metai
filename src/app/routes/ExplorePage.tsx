@@ -25,7 +25,7 @@ export function ExplorePage() {
       {/* Hero */}
       <section style={{
         minHeight: '88vh', display: 'flex', alignItems: 'center', justifyContent: 'center',
-        padding: '0 48px', borderBottom: '0.5px solid #2a2a2a', textAlign: 'center',
+        padding: '0 48px', textAlign: 'center',
       }}>
         <div style={{ maxWidth: '680px' }}>
           <h1 style={{
@@ -56,7 +56,7 @@ export function ExplorePage() {
       </section>
 
       {/* Stats */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', borderBottom: '0.5px solid #2a2a2a' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)',  }}>
         {[
           { num: '47', label: 'Looks analyzed — 2026' },
           { num: '12', label: 'Looks scored on-theme' },
@@ -70,7 +70,7 @@ export function ExplorePage() {
       </div>
 
       {/* Archive — teaser */}
-      <div id="archive" style={{ padding: '100px 48px', borderBottom: '0.5px solid #2a2a2a' }}>
+      <div id="archive" style={{ padding: '100px 48px',  }}>
         <div style={{ maxWidth: '1100px', margin: '0 auto' }}>
           <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: '52px', flexWrap: 'wrap', gap: '20px' }}>
             <div>
@@ -170,7 +170,7 @@ export function ExplorePage() {
       </div>
 
       {/* 2026 Scoreboard */}
-      <div id="scoreboard" style={{ padding: '100px 48px', borderTop: '0.5px solid #252525' }}>
+      <div id="scoreboard" style={{ padding: '100px 48px',  }}>
         <div style={{ maxWidth: '1100px', margin: '0 auto' }}>
           <div style={{ fontSize: '11px', letterSpacing: '0.2em', color: '#888', textTransform: 'uppercase', marginBottom: '20px' }}>2026 scoreboard preview</div>
           <h2 style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 'clamp(36px,4vw,60px)', fontWeight: 300, lineHeight: 1.15, marginBottom: '40px', maxWidth: '560px' }}>
@@ -196,7 +196,7 @@ export function ExplorePage() {
       </div>
 
       {/* Quote */}
-      <div style={{ padding: '100px 48px', textAlign: 'center', borderTop: '0.5px solid #252525' }}>
+      <div style={{ padding: '100px 48px', textAlign: 'center',  }}>
         <p style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 'clamp(26px,3.5vw,48px)', fontWeight: 300, fontStyle: 'italic', color: '#fff', maxWidth: '760px', margin: '0 auto 24px', lineHeight: 1.35 }}>
           "Fashion is not something that exists in dresses only. Fashion is in the sky, in the street — fashion has to do with ideas."
         </p>
@@ -204,7 +204,7 @@ export function ExplorePage() {
       </div>
 
       {/* Footer */}
-      <footer style={{ padding: '40px 48px', borderTop: '0.5px solid #252525', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+      <footer style={{ padding: '40px 48px', borderTop: '0.5px solid #2a2a2a', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: '18px', fontWeight: 300 }}>MetAI</div>
         <div style={{ fontSize: '12px', color: '#555' }}>© 2026 MetAI. Fashion criticism, powered by AI.</div>
         <div style={{ display: 'flex', gap: '24px' }}>

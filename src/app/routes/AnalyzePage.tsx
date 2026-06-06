@@ -1,6 +1,7 @@
 import { useState, useRef, DragEvent } from 'react';
 import { Search, Upload, Sparkles, ChevronDown } from 'lucide-react';
 import { Nav } from '../components/Nav';
+import { useSearchParams } from 'react-router';
 import type { LookAnalysis, ArtReference, SearchImage } from '../../types';
 import { MET_YEARS } from '../data/metYears';
 
@@ -248,8 +249,10 @@ const bodyStyle: React.CSSProperties = {
 type Phase = 'idle' | 'searching' | 'analyzing' | 'done' | 'error';
 
 export function AnalyzePage() {
+  const [searchParams] = useSearchParams();
+  const yearFromUrl = parseInt(searchParams.get('year') ?? '2026');
   const [tab, setTab]               = useState<'search' | 'upload'>('search');
-  const [selectedYear, setYear]     = useState(2026);
+  const [selectedYear, setYear]     = useState(isNaN(yearFromUrl) ? 2026 : yearFromUrl);
   const [query, setQuery]           = useState('');
   const [images, setImages]         = useState<SearchImage[]>([]);
   const [selected, setSelected]     = useState<string | null>(null);

@@ -65,7 +65,7 @@ export function Nav({ back }: NavProps) {
             position: "absolute", bottom: "-3px", height: "1px", background: "#fff",
             left: indicator.left, width: indicator.width,
             opacity: indicator.visible ? 1 : 0,
-            transition: "left 0.3s cubic-bezier(0.23,1,0.32,1), width 0.3s cubic-bezier(0.23,1,0.32,1), opacity 0.2s ease",
+            transition: "left 0.5s cubic-bezier(0.34,1.56,0.64,1), width 0.5s cubic-bezier(0.34,1.56,0.64,1), opacity 0.2s ease",
             pointerEvents: "none",
           }} />
 
