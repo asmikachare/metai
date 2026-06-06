@@ -11,12 +11,12 @@ type YearData = { status: 'loading' | 'done' | 'error'; images?: YearImage[]; bl
 // ─── Swiper card data ─────────────────────────────────────────────────────────
 
 const CARDS = [
-  { year: '2019', label: 'Camp: Notes on Fashion', src: null, gradient: 'linear-gradient(145deg,#7c3aed,#db2777,#f97316)' },
-  { year: '2018', label: 'Heavenly Bodies', src: null, gradient: 'linear-gradient(145deg,#1e1b4b,#4c1d95,#7c3aed)' },
-  { year: '2016', label: 'Manus x Machina', src: null, gradient: 'linear-gradient(145deg,#0f172a,#1e293b,#475569)' },
-  { year: '2015', label: 'China: Through the Looking Glass', src: null, gradient: 'linear-gradient(145deg,#7f1d1d,#b91c1c,#fca5a5)' },
-  { year: '2013', label: 'PUNK: Chaos to Couture', src: null, gradient: 'linear-gradient(145deg,#111,#1c1917,#78716c)' },
-  { year: '2011', label: 'Alexander McQueen: Savage Beauty', src: null, gradient: 'linear-gradient(145deg,#064e3b,#065f46,#6ee7b7)' },
+  { year: '2019', label: 'Camp: Notes on Fashion', src: '/archive/2019.jpg', gradient: 'linear-gradient(145deg,#7c3aed,#db2777,#f97316)' },
+  { year: '2018', label: 'Heavenly Bodies', src: '/archive/2018.jpg', gradient: 'linear-gradient(145deg,#1e1b4b,#4c1d95,#7c3aed)' },
+  { year: '2016', label: 'Manus x Machina', src: '/archive/2016.jpg', gradient: 'linear-gradient(145deg,#0f172a,#1e293b,#475569)' },
+  { year: '2015', label: 'China: Through the Looking Glass', src: '/archive/2015.jpg', gradient: 'linear-gradient(145deg,#7f1d1d,#b91c1c,#fca5a5)' },
+  { year: '2013', label: 'PUNK: Chaos to Couture', src: '/archive/2013.jpg', gradient: 'linear-gradient(145deg,#111,#1c1917,#78716c)' },
+  { year: '2011', label: 'Alexander McQueen: Savage Beauty', src: '/archive/2011.jpg', gradient: 'linear-gradient(145deg,#064e3b,#065f46,#6ee7b7)' },
 ];
 
 // ─── Row data ─────────────────────────────────────────────────────────────────
@@ -67,59 +67,135 @@ const ROWS = [
 // ─── Card swiper ──────────────────────────────────────────────────────────────
 
 function CardSwiper() {
-  const [idx, setIdx] = useState(0);
-  const [exiting, setExiting] = useState(false);
-  const touchStartX = useRef<number | null>(null);
+  const n = CARDS.length;
+  const [order, setOrder] = useState(() => Array.from({ length: n }, (_, i) => i));
+  const [animDir, setAnimDir] = useState<'next' | 'prev' | null>(null);
+  const [dragOffset, setDragOffset] = useState(0);
+  const dragStartX = useRef<number | null>(null);
+  const dragging = useRef(false);
 
-  const canNext = idx < CARDS.length - 1;
-  const canPrev = idx > 0;
+  const BASE = [
+    { x: 0,  y: 0,  rot: 0, scale: 1.00, opacity: 1.00, zIndex: 12 },
+    { x: 14, y: 8,  rot: 2, scale: 0.96, opacity: 0.88, zIndex: 11 },
+    { x: 24, y: 14, rot: 4, scale: 0.92, opacity: 0.76, zIndex: 10 },
+  ];
+  // prevCard rests at the back-of-deck position, invisible but physically there
+  const PREV_REST = { x: 24, y: 14, rot: 4, scale: 0.92, opacity: 0, zIndex: 8 };
+  // truly gone — used when a card exits the visible set
+  const GONE = { x: 32, y: 20, rot: 6, scale: 0.85, opacity: 0, zIndex: 7 };
 
   const goNext = () => {
-    if (exiting || !canNext) return;
-    setExiting(true);
-    setTimeout(() => { setIdx(i => i + 1); setExiting(false); }, 380);
-  };
-  const goPrev = () => {
-    if (exiting || !canPrev) return;
-    setIdx(i => i - 1);
-  };
-  const onTouchStart = (e: React.TouchEvent) => { touchStartX.current = e.touches[0].clientX; };
-  const onTouchEnd = (e: React.TouchEvent) => {
-    if (touchStartX.current === null) return;
-    const dx = e.changedTouches[0].clientX - touchStartX.current;
-    if (dx < -40) goNext(); else if (dx > 40) goPrev();
-    touchStartX.current = null;
+    if (animDir) return;
+    setAnimDir('next');
+    setTimeout(() => {
+      setOrder(o => { const a = [...o]; a.push(a.shift()!); return a; });
+      setAnimDir(null);
+    }, 420);
   };
 
-  const visibleCount = Math.min(3, CARDS.length - idx);
-  const baseTransforms = [
-    { x: 0, y: 0, rot: 0, scale: 1.00 },
-    { x: 14, y: 8, rot: 2, scale: 0.96 },
-    { x: 24, y: 14, rot: 4, scale: 0.92 },
-  ];
+  const goPrev = () => {
+    if (animDir) return;
+    setAnimDir('prev');
+    setTimeout(() => {
+      setOrder(o => { const a = [...o]; a.unshift(a.pop()!); return a; });
+      setAnimDir(null);
+    }, 420);
+  };
+
+  const handleDragStart = (x: number) => {
+    if (animDir) return;
+    dragStartX.current = x;
+    dragging.current = true;
+  };
+  const handleDragMove = (x: number) => {
+    if (!dragging.current || dragStartX.current === null || animDir) return;
+    setDragOffset(x - dragStartX.current);
+  };
+  const handleDragEnd = (x: number) => {
+    if (!dragging.current) return;
+    dragging.current = false;
+    const dx = dragStartX.current !== null ? x - dragStartX.current : 0;
+    dragStartX.current = null;
+    setDragOffset(0);
+    if (dx < -50) goNext();
+    else if (dx > 50) goPrev();
+  };
+
+  // 3 visible + 1 pre-mounted "previous" card so goPrev can animate it to front
+  const visible = order.slice(0, 3);
+  const prevCardIdx = order[n - 1];
+  const allRendered = [...new Set([...visible, prevCardIdx])];
+
+  const getPos = (cardIdx: number) => {
+    const slot = visible.indexOf(cardIdx);
+    const isPrev = cardIdx === prevCardIdx && slot === -1;
+
+    if (isPrev) {
+      // Rests physically at the back of the deck (same position as BASE[2], just invisible)
+      // When goPrev fires, it slides forward to the front — mirrors goNext exactly in reverse
+      if (animDir === 'prev') return { ...BASE[0], zIndex: 13 };
+      return PREV_REST;
+    }
+    if (slot === -1) return GONE;
+    if (!animDir) return BASE[slot];
+
+    if (animDir === 'next') {
+      if (slot === 0) return { ...BASE[2], zIndex: 9 }; // goes to back
+      if (slot === 1) return BASE[0];                    // comes to front
+      if (slot === 2) return BASE[1];                    // comes to middle
+    }
+    if (animDir === 'prev') {
+      if (slot === 0) return BASE[1];  // goes to middle
+      if (slot === 1) return BASE[2];  // goes to back
+      if (slot === 2) return GONE;     // exits deeper behind
+    }
+    return BASE[slot];
+  };
+
+  const frontCardIdx =
+    !animDir        ? visible[0] :
+    animDir === 'next' ? visible[1] :
+    prevCardIdx;
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '28px' }}>
-      <div style={{ position: 'relative', width: '320px', height: '400px', cursor: canNext ? 'pointer' : 'default' }}
-        onClick={goNext} onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
-        {Array.from({ length: visibleCount }).map((_, stackPos) => {
-          const card = CARDS[idx + stackPos];
-          const isFront = stackPos === 0;
-          const { x, y, rot, scale } = baseTransforms[stackPos];
-          let transform = `translateX(${x}px) translateY(${y}px) rotate(${rot}deg) scale(${scale})`;
-          let opacity = 1 - stackPos * 0.12;
-          if (isFront && exiting) { transform = `translateX(-110%) translateY(-24px) rotate(-12deg) scale(0.88)`; opacity = 0; }
-          if (!isFront && exiting) {
-            const next = baseTransforms[stackPos - 1];
-            transform = `translateX(${next.x}px) translateY(${next.y}px) rotate(${next.rot}deg) scale(${next.scale})`;
-            opacity = 1 - (stackPos - 1) * 0.12;
-          }
+      <div
+        style={{ position: 'relative', width: '320px', height: '400px', cursor: dragging.current ? 'grabbing' : 'grab', userSelect: 'none' }}
+        onMouseDown={e => handleDragStart(e.clientX)}
+        onMouseMove={e => handleDragMove(e.clientX)}
+        onMouseUp={e => handleDragEnd(e.clientX)}
+        onMouseLeave={e => handleDragEnd(e.clientX)}
+        onTouchStart={e => handleDragStart(e.touches[0].clientX)}
+        onTouchMove={e => handleDragMove(e.touches[0].clientX)}
+        onTouchEnd={e => handleDragEnd(e.changedTouches[0].clientX)}
+      >
+        {allRendered.map(cardIdx => {
+          const pos = getPos(cardIdx);
+          const card = CARDS[cardIdx];
+          const isFront = cardIdx === frontCardIdx;
           return (
-            <div key={idx + stackPos} style={{ position: 'absolute', inset: 0, zIndex: 10 - stackPos, borderRadius: '20px', overflow: 'hidden', transform, opacity, transition: 'transform 0.38s cubic-bezier(0.23,1,0.32,1), opacity 0.38s ease', boxShadow: isFront ? '0 24px 60px rgba(0,0,0,0.7)' : '0 8px 24px rgba(0,0,0,0.5)' }}>
+            <div
+              key={cardIdx}
+              style={{
+                position: 'absolute', inset: 0,
+                zIndex: pos.zIndex,
+                borderRadius: '20px', overflow: 'hidden',
+                transform: isFront && !animDir
+                  ? `translateX(${pos.x + dragOffset}px) translateY(${pos.y}px) rotate(${pos.rot + dragOffset * 0.025}deg) scale(${pos.scale})`
+                  : `translateX(${pos.x}px) translateY(${pos.y}px) rotate(${pos.rot}deg) scale(${pos.scale})`,
+                opacity: pos.opacity,
+                transition: isFront && dragging.current ? 'none' : 'transform 0.42s cubic-bezier(0.23,1,0.32,1), opacity 0.42s ease',
+                boxShadow: isFront ? '0 24px 60px rgba(0,0,0,0.7)' : '0 8px 24px rgba(0,0,0,0.5)',
+                pointerEvents: 'none',
+              }}
+            >
               <div style={{ width: '100%', height: '100%', background: card.gradient, position: 'relative' }}>
+                {card.src && (
+                  <img src={card.src} alt={card.label} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'top' }} />
+                )}
                 {isFront && (
-                  <div style={{ position: 'absolute', bottom: '24px', left: '24px', right: '24px' }}>
-                    <div style={{ fontSize: '11px', letterSpacing: '0.16em', color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase', marginBottom: '6px' }}>{card.label}</div>
+                  <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: '40px 24px 24px', background: 'linear-gradient(to top, rgba(0,0,0,0.75) 0%, transparent 100%)' }}>
+                    <div style={{ fontSize: '11px', letterSpacing: '0.16em', color: 'rgba(255,255,255,0.6)', textTransform: 'uppercase', marginBottom: '6px' }}>{card.label}</div>
                     <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: '52px', fontWeight: 300, color: '#fff', lineHeight: 1 }}>{card.year}</div>
                   </div>
                 )}
@@ -127,17 +203,28 @@ function CardSwiper() {
             </div>
           );
         })}
-        {canNext && !exiting && (
-          <div style={{ position: 'absolute', top: '18px', right: '18px', zIndex: 20, fontSize: '10px', letterSpacing: '0.14em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.35)', pointerEvents: 'none' }}>tap →</div>
-        )}
       </div>
+
+      {/* Navigation hint — arrows are clickable */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+        <button onClick={goPrev} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '16px', color: '#fff', opacity: 0.4, padding: '4px 8px', transition: 'opacity 0.15s' }}
+          onMouseEnter={e => (e.currentTarget.style.opacity = '1')} onMouseLeave={e => (e.currentTarget.style.opacity = '0.4')}>←</button>
+        <span style={{ fontSize: '10px', letterSpacing: '0.2em', textTransform: 'uppercase', color: '#fff', opacity: 0.3 }}>swipe</span>
+        <button onClick={goNext} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '16px', color: '#fff', opacity: 0.4, padding: '4px 8px', transition: 'opacity 0.15s' }}
+          onMouseEnter={e => (e.currentTarget.style.opacity = '1')} onMouseLeave={e => (e.currentTarget.style.opacity = '0.4')}>→</button>
+      </div>
+
+      {/* Dots */}
       <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
         {CARDS.map((_, i) => (
-          <div key={i} style={{ width: i === idx ? '20px' : '6px', height: '6px', borderRadius: '3px', background: i === idx ? '#fff' : '#333', transition: 'all 0.3s cubic-bezier(0.23,1,0.32,1)', cursor: 'pointer' }}
-            onClick={e => { e.stopPropagation(); if (i < idx) goPrev(); else if (i > idx) goNext(); }} />
+          <div key={i} style={{
+            width: i === order[0] ? '20px' : '6px', height: '6px',
+            borderRadius: '3px',
+            background: i === order[0] ? '#fff' : '#333',
+            transition: 'all 0.3s cubic-bezier(0.23,1,0.32,1)',
+          }} />
         ))}
       </div>
-      {canPrev && <button onClick={e => { e.stopPropagation(); goPrev(); }} style={{ fontSize: '12px', color: '#555', background: 'transparent', border: 'none', cursor: 'pointer', letterSpacing: '0.08em' }}>← back</button>}
     </div>
   );
 }
@@ -159,7 +246,7 @@ function Skeleton() {
       </div>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '8px' }}>
         {Array.from({ length: 6 }).map((_, i) => (
-          <div key={i} style={{ height: '180px', borderRadius: '10px', background: 'linear-gradient(90deg,#1a1a1a 25%,#242424 50%,#1a1a1a 75%)', backgroundSize: '200% 100%', animation: `shimmer 1.4s infinite ${i * 0.1}s` }} />
+          <div key={i} style={{ height: '260px', borderRadius: '10px', background: 'linear-gradient(90deg,#1a1a1a 25%,#242424 50%,#1a1a1a 75%)', backgroundSize: '200% 100%', animation: `shimmer 1.4s infinite ${i * 0.1}s` }} />
         ))}
       </div>
     </div>
@@ -172,7 +259,7 @@ function ExpansionPanel({ year, data, visible, navigate }: { year: number; data:
   return (
     <div style={{
       overflow: 'hidden',
-      maxHeight: visible ? '700px' : '0px',
+      maxHeight: visible ? '900px' : '0px',
       opacity: visible ? 1 : 0,
       transition: 'max-height 0.45s cubic-bezier(0.23,1,0.32,1), opacity 0.3s ease',
       borderTop: visible ? '0.5px solid #1a1a1a' : 'none',
@@ -213,11 +300,11 @@ function ExpansionPanel({ year, data, visible, navigate }: { year: number; data:
               <div
                 key={i}
                 onClick={() => navigate(`/analyze?year=${year}`)}
-                style={{ height: '180px', borderRadius: '10px', overflow: 'hidden', background: '#111', cursor: 'pointer', transition: 'opacity 0.2s ease' }}
+                style={{ height: '260px', borderRadius: '10px', overflow: 'hidden', background: '#111', cursor: 'pointer', transition: 'opacity 0.2s ease' }}
                 onMouseEnter={e => (e.currentTarget.style.opacity = '0.75')}
                 onMouseLeave={e => (e.currentTarget.style.opacity = '1')}
               >
-                <img src={img.thumbnail || img.url} alt={img.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                <img src={img.thumbnail || img.url} alt={img.title} style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'top center' }}
                   onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
               </div>
             ))}
