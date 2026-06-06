@@ -1,7 +1,8 @@
 import { useState, useRef, DragEvent } from 'react';
-import { Link } from 'react-router';
-import { ArrowLeft, Search, Upload, Sparkles, ChevronDown } from 'lucide-react';
+import { Search, Upload, Sparkles, ChevronDown } from 'lucide-react';
+import { Nav } from '../components/Nav';
 import type { LookAnalysis, ArtReference, SearchImage } from '../../types';
+import { MET_YEARS } from '../data/metYears';
 
 // ─── helpers ────────────────────────────────────────────────────────────────
 
@@ -45,21 +46,6 @@ function ScoreWheel({ score }: { score: number }) {
   );
 }
 
-// ─── results ─────────────────────────────────────────────────────────────────
-
-// Year/theme config — swap these when adding multi-year support
-const MET_YEAR = 2026;
-const MET_THEME = 'Fashion as Art';
-
-// ─── pillar bar ──────────────────────────────────────────────────────────────
-
-const PILLAR_LABELS: Record<string, string> = {
-  wearable_sculpture:  'Wearable Sculpture',
-  technology_craft:    'Technology & Craft',
-  cultural_commentary: 'Cultural Commentary',
-  material_innovation: 'Material Innovation',
-  body_as_medium:      'Body as Medium',
-};
 
 function PillarBar({ label, value }: { label: string; value: number }) {
   const color = scoreColor(value);
@@ -162,8 +148,8 @@ function AnalysisResults({
                   )}
                 </div>
               )}
-              <div style={{ fontSize: '11px', color: '#333', letterSpacing: '0.1em' }}>
-                {MET_YEAR} Met Gala&nbsp;·&nbsp;{MET_THEME}
+              <div style={{ fontSize: '11px', color: '#555', letterSpacing: '0.1em' }}>
+                {analysis.met_year ?? 2026} Met Gala&nbsp;·&nbsp;{analysis.met_theme ?? 'Fashion as Art'}
               </div>
             </div>
           </div>
@@ -185,7 +171,7 @@ function AnalysisResults({
               <div style={labelStyle}>Theme pillars</div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', marginTop: '4px' }}>
                 {Object.entries(analysis.pillars).map(([key, val]) => (
-                  <PillarBar key={key} label={PILLAR_LABELS[key] ?? key} value={val as number} />
+                  <PillarBar key={key} label={analysis.pillar_labels?.[key] ?? key.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())} value={val as number} />
                 ))}
               </div>
             </div>
@@ -263,6 +249,7 @@ type Phase = 'idle' | 'searching' | 'analyzing' | 'done' | 'error';
 
 export function AnalyzePage() {
   const [tab, setTab]               = useState<'search' | 'upload'>('search');
+  const [selectedYear, setYear]     = useState(2026);
   const [query, setQuery]           = useState('');
   const [images, setImages]         = useState<SearchImage[]>([]);
   const [selected, setSelected]     = useState<string | null>(null);
@@ -275,12 +262,15 @@ export function AnalyzePage() {
   const [errorMsg, setError]        = useState('');
   const fileRef = useRef<HTMLInputElement>(null);
 
+  const currentMetYear = MET_YEARS.find(y => y.year === selectedYear) ?? MET_YEARS[0];
+
   const reset = () => {
     setPhase('idle'); setAnalysis(null); setImages([]); setSelected(null);
     setPreview(null); setUpload(null); setQuery(''); setError('');
   };
 
   const switchTab = (t: 'search' | 'upload') => { setTab(t); reset(); };
+  const switchYear = (y: number) => { setYear(y); reset(); };
 
   // ── search ─────────────────────────────────────────────────────────────────
   const handleSearch = async () => {
@@ -290,7 +280,7 @@ export function AnalyzePage() {
       const res = await fetch('/api/search-look', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: query.trim() }),
+        body: JSON.stringify({ name: query.trim(), year: selectedYear }),
       });
       const data = await res.json();
       if (!res.ok || !data.images?.length) throw new Error(data.error ?? 'No images found');
@@ -326,8 +316,8 @@ export function AnalyzePage() {
   const handleAnalyze = async () => {
     setPhase('analyzing');
     const payload = tab === 'search'
-      ? { imageUrl: selected!, celebrityName: query, candidateUrls: images.map(i => i.url) }
-      : { imageBase64: uploadData!.base64, mediaType: uploadData!.mediaType };
+      ? { imageUrl: selected!, celebrityName: query, candidateUrls: images.map(i => i.url), year: selectedYear }
+      : { imageBase64: uploadData!.base64, mediaType: uploadData!.mediaType, year: selectedYear };
 
     try {
       const res = await fetch('/api/analyze', {
@@ -362,20 +352,7 @@ export function AnalyzePage() {
         .meta-input:focus { border-color: #555 !important; }
       `}</style>
 
-      {/* Nav */}
-      <nav style={{
-        position: 'sticky', top: 0, zIndex: 100, display: 'flex', alignItems: 'center',
-        justifyContent: 'space-between', padding: '20px 48px',
-        borderBottom: '0.5px solid #1a1a1a', background: 'rgba(8,8,8,0.92)', backdropFilter: 'blur(12px)',
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '24px' }}>
-          <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: '#555', textDecoration: 'none', letterSpacing: '0.04em' }}>
-            <ArrowLeft size={15} /> Back
-          </Link>
-          <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: '22px', fontWeight: 300, color: '#fff', letterSpacing: '0.06em' }}>MetAI</div>
-        </div>
-        <div style={{ fontSize: '12px', color: '#444', letterSpacing: '0.04em' }}>2026 · Fashion as Art</div>
-      </nav>
+      <Nav back={{ to: "/explore" }} />
 
       {/* Results */}
       {phase === 'done' && analysis && resultImage ? (
@@ -397,9 +374,37 @@ export function AnalyzePage() {
             }}>
               Analyze a look
             </h1>
-            <p style={{ fontSize: '15px', color: '#555', lineHeight: 1.7 }}>
-              Search for a celebrity or drop a screenshot. We score it against "Fashion as Art."
+            <p style={{ fontSize: '15px', color: '#888', lineHeight: 1.7, marginBottom: '32px' }}>
+              Scored against the year's theme. No mercy.
             </p>
+
+            {/* Year selector */}
+            <div style={{ marginBottom: '8px' }}>
+              <div style={{ fontSize: '11px', letterSpacing: '0.18em', color: '#555', textTransform: 'uppercase', marginBottom: '12px' }}>
+                Select a year
+              </div>
+              <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '4px', scrollbarWidth: 'none', justifyContent: 'center', flexWrap: 'wrap' }}>
+                {MET_YEARS.map(({ year, theme }) => (
+                  <button
+                    key={year}
+                    onClick={() => switchYear(year)}
+                    style={{
+                      fontSize: '13px', padding: '8px 16px', borderRadius: '100px',
+                      border: `0.5px solid ${selectedYear === year ? '#fff' : '#2a2a2a'}`,
+                      background: selectedYear === year ? '#fff' : 'transparent',
+                      color: selectedYear === year ? '#080808' : '#666',
+                      cursor: 'pointer', letterSpacing: '0.04em', whiteSpace: 'nowrap',
+                      transition: 'all 0.15s ease',
+                    }}
+                  >
+                    {year}
+                  </button>
+                ))}
+              </div>
+              <div style={{ fontSize: '12px', color: '#555', marginTop: '10px', fontStyle: 'italic' }}>
+                {currentMetYear.theme}
+              </div>
+            </div>
           </div>
 
           {/* Tab switcher */}

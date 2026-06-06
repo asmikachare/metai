@@ -13,13 +13,10 @@ export type LookAnalysis = {
   house_context?: string;
   creative_director?: string;
   artist?: string;
-  pillars: {
-    wearable_sculpture: number;
-    technology_craft: number;
-    cultural_commentary: number;
-    material_innovation: number;
-    body_as_medium: number;
-  };
+  pillars: Record<string, number>;
+  pillar_labels?: Record<string, string>;
+  met_year?: number;
+  met_theme?: string;
   look_description: string;
   plain_english: string;
   critique: string;
