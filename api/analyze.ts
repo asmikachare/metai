@@ -1,6 +1,6 @@
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import Anthropic from '@anthropic-ai/sdk';
-import { parseBody, sendJson, getDefaultPillars, buildSystemPrompt, YEAR_THEMES } from './_shared.js';
+import { parseBody, sendJson, getDefaultPillars, getPillarLabels, computeScore, computeVerdict, buildSystemPrompt, YEAR_THEMES } from './_shared.js';
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 const SUPPORTED_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
@@ -82,7 +82,10 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
     if (!match) { sendJson(res, 500, { error: 'No JSON in AI response' }); return; }
 
     const result = JSON.parse(match[0]);
-    result.pillar_labels = getDefaultPillars(metYear);
+    const yearPillars = getDefaultPillars(metYear);
+    result.score = computeScore(result.pillars ?? {}, yearPillars);
+    result.verdict = computeVerdict(result.score);
+    result.pillar_labels = getPillarLabels(metYear);
     result.met_year = metYear;
     result.met_theme = theme;
 
