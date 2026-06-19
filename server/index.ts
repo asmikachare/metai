@@ -156,16 +156,26 @@ Return JSON only: { "years": [array of year numbers] }` }],
       return res.json({ attended: false, images: [], suggestedYears, message: `${trimmedName} didn't attend the ${metYear} Met Gala.` });
     }
 
-    // Step 4: Attended — image search with theme-specific query
+    // Step 4: Attended — image search with theme-specific query, fetch extra to allow filtering
     const imageRes = await fetch('https://google.serper.dev/images', {
       method: 'POST', headers: serperHeaders,
-      body: JSON.stringify({ q: `${trimmedName} ${metYear} Met Gala ${theme} red carpet`, num: 5 }),
+      body: JSON.stringify({ q: `${trimmedName} ${metYear} Met Gala ${theme} red carpet`, num: 10 }),
     }).then(r => r.json()).catch(() => null);
 
-    const images = ((imageRes?.images ?? []) as any[])
-      .slice(0, 5)
+    const allImages = ((imageRes?.images ?? []) as any[])
+      .slice(0, 10)
       .map((item: any) => ({ url: item.imageUrl ?? '', thumbnail: item.thumbnailUrl ?? item.imageUrl ?? '', title: item.title ?? '' }))
       .filter((img: any) => img.url);
+
+    // Drop images whose titles mention a year other than metYear
+    const yearFiltered = allImages.filter(img => {
+      const yearsInTitle = (img.title.match(/\b(20\d{2})\b/g) ?? []).map(Number);
+      if (yearsInTitle.length === 0) return true;
+      return yearsInTitle.some((y: number) => y === metYear);
+    });
+
+    // Fall back to unfiltered if filtering removed too many
+    const images = (yearFiltered.length >= 2 ? yearFiltered : allImages).slice(0, 5);
 
     res.json({ attended: true, images, topImage: images[0]?.url ?? null, suggestedYears: [] });
   } catch (err: any) {
