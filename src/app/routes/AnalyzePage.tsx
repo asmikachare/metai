@@ -260,16 +260,17 @@ export function AnalyzePage() {
   const [uploadData, setUpload]     = useState<{ base64: string; mediaType: string } | null>(null);
   const [dragging, setDragging]     = useState(false);
   const [phase, setPhase]           = useState<Phase>('idle');
-  const [analysis, setAnalysis]     = useState<LookAnalysis | null>(null);
-  const [resultImage, setResultImg] = useState<string | null>(null);
-  const [errorMsg, setError]        = useState('');
+  const [analysis, setAnalysis]         = useState<LookAnalysis | null>(null);
+  const [resultImage, setResultImg]     = useState<string | null>(null);
+  const [errorMsg, setError]            = useState('');
+  const [suggestedYears, setSuggested]  = useState<number[]>([]);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const currentMetYear = MET_YEARS.find(y => y.year === selectedYear) ?? MET_YEARS[0];
 
   const reset = () => {
     setPhase('idle'); setAnalysis(null); setImages([]); setSelected(null);
-    setPreview(null); setUpload(null); setQuery(''); setError('');
+    setPreview(null); setUpload(null); setQuery(''); setError(''); setSuggested([]);
   };
 
   const switchTab = (t: 'search' | 'upload') => { setTab(t); reset(); };
@@ -278,7 +279,7 @@ export function AnalyzePage() {
   // ── search ─────────────────────────────────────────────────────────────────
   const handleSearch = async () => {
     if (!query.trim()) return;
-    setPhase('searching'); setImages([]); setSelected(null);
+    setPhase('searching'); setImages([]); setSelected(null); setSuggested([]);
     try {
       const res = await fetch('/api/search-look', {
         method: 'POST',
@@ -286,7 +287,17 @@ export function AnalyzePage() {
         body: JSON.stringify({ name: query.trim(), year: selectedYear }),
       });
       const data = await res.json();
-      if (!res.ok || !data.images?.length) throw new Error(data.error ?? 'No images found');
+      if (!res.ok) throw new Error(data.error ?? 'Search failed');
+
+      // Celebrity didn't attend this year
+      if (!data.attended && (!data.images || data.images.length === 0)) {
+        setSuggested(data.suggestedYears ?? []);
+        setPhase('error');
+        setError('not_attended');
+        return;
+      }
+
+      if (!data.images?.length) throw new Error('No images found');
       setImages(data.images);
       setSelected(data.images[0].url);
       setPhase('idle');
@@ -520,8 +531,45 @@ export function AnalyzePage() {
             </div>
           )}
 
-          {/* Error */}
-          {phase === 'error' && (
+          {/* Error — didn't attend */}
+          {phase === 'error' && errorMsg === 'not_attended' && (
+            <div style={{
+              background: '#0d0d0d', border: '0.5px solid #2a2a2a',
+              borderRadius: '16px', padding: '24px', marginBottom: '20px',
+            }}>
+              <div style={{ fontSize: '15px', color: '#fff', marginBottom: '8px', fontWeight: 500 }}>
+                Oops — {query} didn't attend the {selectedYear} Met Gala.
+              </div>
+              <div style={{ fontSize: '13px', color: '#777', marginBottom: '20px' }}>
+                Try one of the years they did show up:
+              </div>
+              {suggestedYears.length > 0 ? (
+                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                  {suggestedYears.map(y => (
+                    <button
+                      key={y}
+                      onClick={() => { switchYear(y); setTimeout(() => handleSearch(), 50); }}
+                      style={{
+                        fontSize: '13px', padding: '8px 18px', borderRadius: '100px',
+                        border: '0.5px solid #2a2a2a', background: 'transparent',
+                        color: '#fff', cursor: 'pointer', letterSpacing: '0.04em',
+                        transition: 'background 0.15s, border-color 0.15s',
+                      }}
+                      onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#1a1a1a'; (e.currentTarget as HTMLElement).style.borderColor = '#444'; }}
+                      onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; (e.currentTarget as HTMLElement).style.borderColor = '#2a2a2a'; }}
+                    >
+                      {y}
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <div style={{ fontSize: '13px', color: '#555' }}>No other years found — try a different name.</div>
+              )}
+            </div>
+          )}
+
+          {/* Error — generic */}
+          {phase === 'error' && errorMsg !== 'not_attended' && (
             <div style={{
               background: 'rgba(248,113,113,0.08)', border: '0.5px solid rgba(248,113,113,0.2)',
               borderRadius: '10px', padding: '14px 18px', marginBottom: '20px',

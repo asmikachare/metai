@@ -80,26 +80,55 @@ app.post('/api/search-look', async (req, res) => {
   if (!name?.trim()) return res.status(400).json({ error: 'name required' });
 
   const metYear = year ?? 2026;
-  const query = `${name.trim()} ${metYear} Met Gala look outfit red carpet`;
+  const serperHeaders = { 'X-API-KEY': process.env.SERPER_API_KEY!, 'Content-Type': 'application/json' };
 
   try {
-    const r = await fetch('https://google.serper.dev/images', {
-      method: 'POST',
-      headers: { 'X-API-KEY': process.env.SERPER_API_KEY!, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ q: query, num: 5 }),
-    });
-    if (!r.ok) {
-      const body = await r.text();
-      console.error('Serper error:', r.status, body);
-      return res.status(502).json({ error: 'Search API error' });
-    }
-    const data = await r.json() as any;
-    const images = (data.images ?? [])
+    // Run image search + attendance verification in parallel
+    const [imageRes, verifyRes] = await Promise.all([
+      fetch('https://google.serper.dev/images', {
+        method: 'POST', headers: serperHeaders,
+        body: JSON.stringify({ q: `${name.trim()} ${metYear} Met Gala look outfit red carpet`, num: 5 }),
+      }).then(r => r.json()).catch(() => null),
+
+      fetch('https://google.serper.dev/search', {
+        method: 'POST', headers: serperHeaders,
+        body: JSON.stringify({ q: `${name.trim()} ${metYear} Met Gala`, num: 5 }),
+      }).then(r => r.json()).catch(() => null),
+    ]);
+
+    const images = ((imageRes?.images ?? []) as any[])
       .slice(0, 5)
       .map((item: any) => ({ url: item.imageUrl ?? '', thumbnail: item.thumbnailUrl ?? item.imageUrl ?? '', title: item.title ?? '' }))
       .filter((img: any) => img.url);
 
-    res.json({ images, topImage: images[0]?.url ?? null });
+    // Check if name + year appear together in text results
+    const verifyText = ((verifyRes?.organic ?? []) as any[])
+      .map((r: any) => `${r.title ?? ''} ${r.snippet ?? ''}`)
+      .join(' ')
+      .toLowerCase();
+    const nameToken = name.trim().toLowerCase().split(' ')[0];
+    const attended = verifyText.includes(nameToken) && verifyText.includes(String(metYear));
+
+    // If not confirmed, find which years they did attend
+    let suggestedYears: number[] = [];
+    if (!attended || images.length === 0) {
+      const yearsRes = await fetch('https://google.serper.dev/search', {
+        method: 'POST', headers: serperHeaders,
+        body: JSON.stringify({ q: `${name.trim()} Met Gala all years red carpet looks`, num: 8 }),
+      }).then(r => r.json()).catch(() => null);
+
+      const yearsText = ((yearsRes?.organic ?? []) as any[])
+        .map((r: any) => `${r.title ?? ''} ${r.snippet ?? ''}`)
+        .join(' ');
+
+      suggestedYears = [...new Set(
+        (yearsText.match(/\b(200[0-9]|201[0-9]|202[0-6])\b/g) ?? [])
+          .map(Number)
+          .filter((y: number) => y !== metYear)
+      )].sort((a, b) => b - a).slice(0, 6) as number[];
+    }
+
+    res.json({ images, topImage: images[0]?.url ?? null, attended: attended || images.length > 0, suggestedYears });
   } catch (err: any) {
     console.error(err);
     res.status(500).json({ error: err.message ?? 'Search failed' });
