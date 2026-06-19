@@ -112,7 +112,7 @@ Return JSON only: { "years": [array of year numbers] }` }],
 
 ${titlesText}
 
-Which image numbers are from the ${metYear} Met Gala specifically? Exclude images that reference other years or events. If fewer than 3 are confirmed, also list uncertain ones (no year mentioned, could be ${metYear}).
+Which image numbers show BOTH: (1) the correct person "${trimmedName}" and (2) the ${metYear} Met Gala specifically? Exclude images of different people OR from different years/events. If fewer than 3 are confirmed, also list uncertain ones (appears to be the right person but year is unclear).
 
 Return JSON only: { "confirmed": [1-based indices], "uncertain": [1-based indices] }` }],
     });
