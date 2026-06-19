@@ -80,55 +80,94 @@ app.post('/api/search-look', async (req, res) => {
   if (!name?.trim()) return res.status(400).json({ error: 'name required' });
 
   const metYear = year ?? 2026;
+  const theme = YEAR_THEMES[metYear] ?? `${metYear} Met Gala`;
+  const trimmedName = name.trim();
   const serperHeaders = { 'X-API-KEY': process.env.SERPER_API_KEY!, 'Content-Type': 'application/json' };
 
   try {
-    // Run image search + attendance verification in parallel
-    const [imageRes, verifyRes] = await Promise.all([
-      fetch('https://google.serper.dev/images', {
-        method: 'POST', headers: serperHeaders,
-        body: JSON.stringify({ q: `${name.trim()} ${metYear} Met Gala look outfit red carpet`, num: 5 }),
-      }).then(r => r.json()).catch(() => null),
+    // Step 1: Web search for attendance evidence
+    const verifyRes = await fetch('https://google.serper.dev/search', {
+      method: 'POST', headers: serperHeaders,
+      body: JSON.stringify({ q: `${trimmedName} ${metYear} Met Gala attended red carpet`, num: 8 }),
+    }).then(r => r.json()).catch(() => null);
 
-      fetch('https://google.serper.dev/search', {
+    const snippets = [
+      verifyRes?.answerBox?.answer ?? '',
+      verifyRes?.answerBox?.snippet ?? '',
+      ...((verifyRes?.organic ?? []) as any[]).slice(0, 6).map((r: any) => `${r.title ?? ''}: ${r.snippet ?? ''}`),
+    ].filter(Boolean).join('\n').slice(0, 1200);
+
+    // Step 2: Claude verifies attendance from snippets — must be strict about the year
+    const verifyMsg = await anthropic.messages.create({
+      model: 'claude-sonnet-4-6',
+      max_tokens: 80,
+      system: 'You are a strict fact-checker. Return only valid JSON, no explanation.',
+      messages: [{ role: 'user', content: `Did "${trimmedName}" attend the ${metYear} Met Gala specifically?
+
+RULES:
+- Only return attended: true if a snippet explicitly mentions both "${trimmedName}" AND the year ${metYear} in the context of the Met Gala.
+- Attending in other years does NOT count.
+- If snippets only mention other years, return attended: false.
+- If no snippet clearly confirms ${metYear}, return attended: false with confidence: low.
+
+Snippets:
+${snippets || 'No results found.'}
+
+Return JSON only: { "attended": boolean, "confidence": "high" | "medium" | "low" }` }],
+    });
+
+    const vText = verifyMsg.content[0].type === 'text' ? verifyMsg.content[0].text : '';
+    const vMatch = vText.match(/\{[\s\S]*?\}/);
+    const verification = vMatch ? JSON.parse(vMatch[0]) : { attended: false, confidence: 'low' };
+
+    // Step 3: Not attended — find suggested years via Claude
+    if (!verification.attended || verification.confidence === 'low') {
+      const yearsRes = await fetch('https://google.serper.dev/search', {
         method: 'POST', headers: serperHeaders,
-        body: JSON.stringify({ q: `${name.trim()} ${metYear} Met Gala`, num: 5 }),
-      }).then(r => r.json()).catch(() => null),
-    ]);
+        body: JSON.stringify({ q: `${trimmedName} Met Gala years attended red carpet history`, num: 8 }),
+      }).then(r => r.json()).catch(() => null);
+
+      const yearsSnippets = [
+        yearsRes?.answerBox?.answer ?? '',
+        yearsRes?.answerBox?.snippet ?? '',
+        ...((yearsRes?.organic ?? []) as any[]).slice(0, 6).map((r: any) => `${r.title ?? ''}: ${r.snippet ?? ''}`),
+      ].filter(Boolean).join('\n').slice(0, 1000);
+
+      const yearsMsg = await anthropic.messages.create({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 100,
+        system: 'You are a factual assistant. Return only valid JSON, no explanation.',
+        messages: [{ role: 'user', content: `What years did "${trimmedName}" attend the Met Gala? Only include years you can confirm from the snippets.
+
+Snippets:
+${yearsSnippets || 'No results found.'}
+
+Return JSON only: { "years": [array of year numbers] }` }],
+      });
+
+      const yText = yearsMsg.content[0].type === 'text' ? yearsMsg.content[0].text : '';
+      const yMatch = yText.match(/\{[\s\S]*?\}/);
+      const yData = yMatch ? JSON.parse(yMatch[0]) : { years: [] };
+      const suggestedYears = ((yData.years ?? []) as number[])
+        .filter(y => y !== metYear)
+        .sort((a, b) => b - a)
+        .slice(0, 6);
+
+      return res.json({ attended: false, images: [], suggestedYears, message: `${trimmedName} didn't attend the ${metYear} Met Gala.` });
+    }
+
+    // Step 4: Attended — image search with theme-specific query
+    const imageRes = await fetch('https://google.serper.dev/images', {
+      method: 'POST', headers: serperHeaders,
+      body: JSON.stringify({ q: `${trimmedName} ${metYear} Met Gala ${theme} red carpet`, num: 5 }),
+    }).then(r => r.json()).catch(() => null);
 
     const images = ((imageRes?.images ?? []) as any[])
       .slice(0, 5)
       .map((item: any) => ({ url: item.imageUrl ?? '', thumbnail: item.thumbnailUrl ?? item.imageUrl ?? '', title: item.title ?? '' }))
       .filter((img: any) => img.url);
 
-    // Check if name + year appear together in text results
-    const verifyText = ((verifyRes?.organic ?? []) as any[])
-      .map((r: any) => `${r.title ?? ''} ${r.snippet ?? ''}`)
-      .join(' ')
-      .toLowerCase();
-    const nameToken = name.trim().toLowerCase().split(' ')[0];
-    const attended = verifyText.includes(nameToken) && verifyText.includes(String(metYear));
-
-    // If not confirmed, find which years they did attend
-    let suggestedYears: number[] = [];
-    if (!attended || images.length === 0) {
-      const yearsRes = await fetch('https://google.serper.dev/search', {
-        method: 'POST', headers: serperHeaders,
-        body: JSON.stringify({ q: `${name.trim()} Met Gala all years red carpet looks`, num: 8 }),
-      }).then(r => r.json()).catch(() => null);
-
-      const yearsText = ((yearsRes?.organic ?? []) as any[])
-        .map((r: any) => `${r.title ?? ''} ${r.snippet ?? ''}`)
-        .join(' ');
-
-      suggestedYears = [...new Set(
-        (yearsText.match(/\b(200[0-9]|201[0-9]|202[0-6])\b/g) ?? [])
-          .map(Number)
-          .filter((y: number) => y !== metYear)
-      )].sort((a, b) => b - a).slice(0, 6) as number[];
-    }
-
-    res.json({ images, topImage: images[0]?.url ?? null, attended: attended || images.length > 0, suggestedYears });
+    res.json({ attended: true, images, topImage: images[0]?.url ?? null, suggestedYears: [] });
   } catch (err: any) {
     console.error(err);
     res.status(500).json({ error: err.message ?? 'Search failed' });
