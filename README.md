@@ -2,7 +2,7 @@
 
 An AI-powered Met Gala fashion critic. Drop any look, pick a year, and get a score, verdict, and full editorial critique — measured against that year's theme.
 
-Live at: [metai.vercel.app](https://metai.vercel.app)
+Live at: [metai-liart.vercel.app](https://metai-liart.vercel.app/)
 
 ---
 
