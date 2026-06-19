@@ -4,6 +4,7 @@ import { Nav } from '../components/Nav';
 import { useSearchParams } from 'react-router';
 import type { LookAnalysis, ArtReference, SearchImage } from '../../types';
 import { MET_YEARS } from '../data/metYears';
+import { useIsMobile } from '../../hooks/useIsMobile';
 
 // ─── helpers ────────────────────────────────────────────────────────────────
 
@@ -97,13 +98,14 @@ function AnalysisResults({
 }) {
   const vs = verdictStyle[analysis.verdict] ?? verdictStyle['Miss'];
   const color = scoreColor(analysis.score);
+  const isMobile = useIsMobile();
 
   return (
-    <div style={{ maxWidth: '1040px', margin: '0 auto', padding: '60px 48px' }}>
-      <div style={{ display: 'grid', gridTemplateColumns: '2fr 3fr', gap: '52px', alignItems: 'start' }}>
+    <div style={{ maxWidth: '1040px', margin: '0 auto', padding: isMobile ? '32px 20px' : '60px 48px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '2fr 3fr', gap: isMobile ? '32px' : '52px', alignItems: 'start' }}>
 
-        {/* Image — sticky while scrolling */}
-        <div style={{ borderRadius: '16px', overflow: 'hidden', aspectRatio: '2/3', background: '#111', position: 'sticky', top: '100px' }}>
+        {/* Image */}
+        <div style={{ borderRadius: '16px', overflow: 'hidden', aspectRatio: '2/3', background: '#111', position: isMobile ? 'relative' : 'sticky', top: isMobile ? undefined : '100px', maxHeight: isMobile ? '360px' : 'none' }}>
           <img src={imageUrl} alt={name ?? 'Met Gala look'} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
         </div>
 
@@ -249,6 +251,7 @@ const bodyStyle: React.CSSProperties = {
 type Phase = 'idle' | 'searching' | 'analyzing' | 'done' | 'error';
 
 export function AnalyzePage() {
+  const isMobile = useIsMobile();
   const [searchParams] = useSearchParams();
   const yearFromUrl = parseInt(searchParams.get('year') ?? '2026');
   const [tab, setTab]               = useState<'search' | 'upload'>('search');
@@ -381,7 +384,7 @@ export function AnalyzePage() {
       ) : (
 
         /* Input area */
-        <div style={{ maxWidth: '640px', margin: '0 auto', padding: '80px 48px' }}>
+        <div style={{ maxWidth: '640px', margin: '0 auto', padding: isMobile ? '48px 20px' : '80px 48px' }}>
           <div style={{ textAlign: 'center', marginBottom: '52px' }}>
             <h1 style={{
               fontFamily: "'Cormorant Garamond',serif",
@@ -473,7 +476,7 @@ export function AnalyzePage() {
                   <div style={{ fontSize: '10px', color: '#444', letterSpacing: '0.18em', textTransform: 'uppercase', marginBottom: '12px' }}>
                     Select the right photo
                   </div>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5,1fr)', gap: '8px' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(3,1fr)' : 'repeat(5,1fr)', gap: '8px' }}>
                     {images.map((img, i) => (
                       <div
                         key={i}

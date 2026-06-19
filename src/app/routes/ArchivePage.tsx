@@ -2,6 +2,7 @@ import { useState, useRef } from 'react';
 import { useNavigate } from 'react-router';
 import { Nav } from '../components/Nav';
 import { ChevronRight, ChevronLeft } from 'lucide-react';
+import { useIsMobile } from '../../hooks/useIsMobile';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -232,8 +233,9 @@ function CardSwiper() {
 // ─── Skeleton ─────────────────────────────────────────────────────────────────
 
 function Skeleton() {
+  const isMobile = useIsMobile();
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '48px', padding: '40px 48px' }}>
+    <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: isMobile ? '24px' : '48px', padding: isMobile ? '24px' : '40px 48px' }}>
       <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
         {[100, 85, 90].map((w, i) => (
           <div key={i} style={{ height: '16px', width: `${w}%`, borderRadius: '4px', background: 'linear-gradient(90deg,#1a1a1a 25%,#242424 50%,#1a1a1a 75%)', backgroundSize: '200% 100%', animation: 'shimmer 1.4s infinite' }} />
@@ -256,10 +258,11 @@ function Skeleton() {
 // ─── Expansion panel ──────────────────────────────────────────────────────────
 
 function ExpansionPanel({ year, data, visible, navigate }: { year: number; data: YearData | undefined; visible: boolean; navigate: (p: string) => void }) {
+  const isMobile = useIsMobile();
   return (
     <div style={{
       overflow: 'hidden',
-      maxHeight: visible ? '900px' : '0px',
+      maxHeight: visible ? '1200px' : '0px',
       opacity: visible ? 1 : 0,
       transition: 'max-height 0.45s cubic-bezier(0.23,1,0.32,1), opacity 0.3s ease',
       borderTop: visible ? '0.5px solid #1a1a1a' : 'none',
@@ -268,7 +271,7 @@ function ExpansionPanel({ year, data, visible, navigate }: { year: number; data:
       {data?.status === 'loading' && <Skeleton />}
 
       {data?.status === 'done' && (
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '48px', padding: '40px 48px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: isMobile ? '24px' : '48px', padding: isMobile ? '24px' : '40px 48px' }}>
           {/* Left — editorial */}
           <div>
             <p style={{
@@ -325,6 +328,7 @@ function ExpansionPanel({ year, data, visible, navigate }: { year: number; data:
 
 export function ArchivePage() {
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
   const [expandedYear, setExpandedYear] = useState<number | null>(null);
   const yearDataRef = useRef<Record<number, YearData>>({});
   const [yearData, setYearData] = useState<Record<number, YearData>>({});
@@ -370,7 +374,7 @@ export function ArchivePage() {
       <Nav back={{ to: "/explore" }} />
 
       {/* Hero */}
-      <section style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '80px', alignItems: 'center', padding: '100px 80px', minHeight: '88vh', borderBottom: '0.5px solid #1a1a1a', maxWidth: '1200px', margin: '0 auto' }}>
+      <section style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: isMobile ? '48px' : '80px', alignItems: 'center', padding: isMobile ? '60px 24px' : '100px 80px', minHeight: isMobile ? 'auto' : '88vh', borderBottom: '0.5px solid #1a1a1a', maxWidth: '1200px', margin: '0 auto' }}>
         <div>
           <div style={{ fontSize: '11px', letterSpacing: '0.22em', color: '#666', textTransform: 'uppercase', marginBottom: '28px' }}>Looking back</div>
           <h1 style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 'clamp(40px,5vw,72px)', fontWeight: 300, lineHeight: 1.08, letterSpacing: '-0.02em', marginBottom: '28px' }}>
@@ -398,7 +402,7 @@ export function ArchivePage() {
           return (
             <div key={label} style={{ marginBottom: '60px' }}>
               {/* Row header */}
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingLeft: '48px', paddingRight: '48px', marginBottom: '20px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingLeft: isMobile ? '20px' : '48px', paddingRight: isMobile ? '20px' : '48px', marginBottom: '20px' }}>
                 <div style={{ fontSize: '11px', letterSpacing: '0.2em', color: '#777', textTransform: 'uppercase' }}>{label}</div>
                 {showArrows && (
                   <div style={{ display: 'flex', gap: '8px' }}>
@@ -413,7 +417,7 @@ export function ArchivePage() {
               </div>
 
               {/* Cards */}
-              <div ref={el => { rowRefs.current[label] = el; }} style={{ display: 'flex', gap: '14px', overflowX: 'auto', paddingLeft: '48px', paddingRight: '48px', paddingTop: '12px', paddingBottom: '16px', scrollbarWidth: 'none' }}>
+              <div ref={el => { rowRefs.current[label] = el; }} style={{ display: 'flex', gap: '14px', overflowX: 'auto', paddingLeft: isMobile ? '20px' : '48px', paddingRight: isMobile ? '20px' : '48px', paddingTop: '12px', paddingBottom: '16px', scrollbarWidth: 'none' }}>
                 {years.map(({ year, theme, fact, tag, tagColor, tagBg }: any) => {
                   const isOpen = expandedYear === year;
                   return (
@@ -421,7 +425,7 @@ export function ArchivePage() {
                       key={year}
                       onClick={() => handleCardClick(year)}
                       style={{
-                        flexShrink: 0, width: '220px',
+                        flexShrink: 0, width: isMobile ? '170px' : '220px',
                         background: isOpen ? '#141414' : '#0d0d0d',
                         border: `0.5px solid ${isOpen ? '#fb923c' : '#1a1a1a'}`,
                         borderRadius: '16px', padding: '24px 22px',
@@ -465,7 +469,13 @@ export function ArchivePage() {
       </div>
 
       {/* Footer */}
-      <footer style={{ padding: '40px 48px', borderTop: '0.5px solid #1a1a1a', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+      <footer style={{
+        padding: isMobile ? '32px 24px' : '40px 48px',
+        borderTop: '0.5px solid #1a1a1a',
+        display: 'flex', flexDirection: isMobile ? 'column' : 'row',
+        alignItems: isMobile ? 'flex-start' : 'center',
+        justifyContent: 'space-between', gap: isMobile ? '16px' : '0',
+      }}>
         <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: '18px', fontWeight: 300 }}>MetAI</div>
         <div style={{ fontSize: '12px', color: '#333' }}>© 2026 MetAI. Fashion criticism, powered by AI.</div>
         <div style={{ display: 'flex', gap: '24px' }}>

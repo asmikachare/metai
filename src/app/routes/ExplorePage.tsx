@@ -1,9 +1,11 @@
 import { useNavigate } from "react-router";
 import { Nav } from "../components/Nav";
+import { useIsMobile } from "../../hooks/useIsMobile";
 
 
 export function ExplorePage() {
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
 
   const scrollToHow = () => {
     document.getElementById('how')?.scrollIntoView({ behavior: 'smooth' });
@@ -25,7 +27,7 @@ export function ExplorePage() {
       {/* Hero */}
       <section style={{
         minHeight: '88vh', display: 'flex', alignItems: 'center', justifyContent: 'center',
-        padding: '0 48px', textAlign: 'center',
+        padding: isMobile ? '0 24px' : '0 48px', textAlign: 'center',
       }}>
         <div style={{ maxWidth: '680px' }}>
           <h1 style={{
@@ -35,19 +37,19 @@ export function ExplorePage() {
           }}>
             From red carpet<br />to verdict in<br /><em style={{ color: '#fb923c', fontStyle: 'italic' }}>seconds.</em>
           </h1>
-          <p style={{ fontSize: '16px', color: '#888', lineHeight: 1.7, maxWidth: '460px', margin: '0 auto 40px', }}>
+          <p style={{ fontSize: '16px', color: '#888', lineHeight: 1.7, maxWidth: '460px', margin: '0 auto 40px' }}>
             Drop any Met Gala look. We score it against the year's theme, critique it like a fashion editor, and tell you what they should've worn instead.
           </p>
-          <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
+          <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', gap: '12px', justifyContent: 'center', alignItems: 'center' }}>
             <button
               onClick={() => navigate('/analyze')}
-              style={{ fontSize: '14px', color: '#080808', background: '#fff', padding: '14px 32px', borderRadius: '100px', border: 'none', cursor: 'pointer', letterSpacing: '0.04em' }}
+              style={{ fontSize: '14px', color: '#080808', background: '#fff', padding: '14px 32px', borderRadius: '100px', border: 'none', cursor: 'pointer', letterSpacing: '0.04em', width: isMobile ? '100%' : 'auto' }}
             >
               Analyze a look →
             </button>
             <button
               onClick={scrollToHow}
-              style={{ fontSize: '14px', color: '#fff', background: 'transparent', padding: '14px 32px', borderRadius: '100px', border: '0.5px solid #2a2a2a', cursor: 'pointer', letterSpacing: '0.04em' }}
+              style={{ fontSize: '14px', color: '#fff', background: 'transparent', padding: '14px 32px', borderRadius: '100px', border: '0.5px solid #2a2a2a', cursor: 'pointer', letterSpacing: '0.04em', width: isMobile ? '100%' : 'auto' }}
             >
               How it works
             </button>
@@ -56,13 +58,17 @@ export function ExplorePage() {
       </section>
 
       {/* Stats */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)',  }}>
+      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(3,1fr)' }}>
         {[
           { num: '47', label: 'Looks analyzed — 2026' },
           { num: '12', label: 'Looks scored on-theme' },
           { num: '78', label: 'Years of Met Gala history' },
         ].map((s, i) => (
-          <div key={i} style={{ padding: '36px 48px', borderRight: i < 2 ? '0.5px solid #2a2a2a' : 'none' }}>
+          <div key={i} style={{
+            padding: isMobile ? '24px 24px' : '36px 48px',
+            borderRight: !isMobile && i < 2 ? '0.5px solid #2a2a2a' : 'none',
+            borderBottom: isMobile && i < 2 ? '0.5px solid #2a2a2a' : 'none',
+          }}>
             <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: '52px', fontWeight: 300, lineHeight: 1, marginBottom: '8px', color: '#fb923c' }}>{s.num}</div>
             <div style={{ fontSize: '13px', color: '#888', letterSpacing: '0.04em' }}>{s.label}</div>
           </div>
@@ -70,7 +76,7 @@ export function ExplorePage() {
       </div>
 
       {/* Archive — teaser */}
-      <div id="archive" style={{ padding: '100px 48px',  }}>
+      <div id="archive" style={{ padding: isMobile ? '60px 24px' : '100px 48px' }}>
         <div style={{ maxWidth: '1100px', margin: '0 auto' }}>
           <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: '52px', flexWrap: 'wrap', gap: '20px' }}>
             <div>
@@ -88,7 +94,7 @@ export function ExplorePage() {
           </div>
 
           {/* 3 featured year cards */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1.4fr 1fr 1fr', gap: '12px', marginBottom: '28px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1.4fr 1fr 1fr', gap: '12px', marginBottom: '28px' }}>
             {[
               { year: '2026', theme: 'Fashion as Art', desc: 'Live now. Score looks in real time as the season unfolds.', tag: 'Live', tagColor: '#fb923c', tagBg: 'rgba(251,146,60,0.1)', active: true },
               { year: '2019', theme: 'Camp: Notes on Fashion', desc: 'The most memed Met ever. Drag, kitsch, maximalism — and very few people got it right.', tag: 'Iconic', tagColor: '#c084fc', tagBg: 'rgba(192,132,252,0.1)', active: false },
@@ -148,12 +154,12 @@ export function ExplorePage() {
       </div>
 
       {/* How it works */}
-      <div id="how" style={{ padding: '100px 48px', maxWidth: '1100px', margin: '0 auto' }}>
+      <div id="how" style={{ padding: isMobile ? '60px 24px' : '100px 48px', maxWidth: '1100px', margin: '0 auto' }}>
         <div style={{ fontSize: '11px', letterSpacing: '0.2em', color: '#888', textTransform: 'uppercase', marginBottom: '20px' }}>How it works</div>
         <h2 style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 'clamp(36px,4vw,60px)', fontWeight: 300, lineHeight: 1.15, marginBottom: '60px', maxWidth: '560px' }}>
           From red carpet to verdict in seconds.
         </h2>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: '1px', background: '#2a2a2a', border: '0.5px solid #2a2a2a' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr 1fr' : 'repeat(4,1fr)', gap: '1px', background: '#2a2a2a', border: '0.5px solid #2a2a2a' }}>
           {[
             { num: '01', title: 'Drop or search', desc: 'Upload a screenshot or type any celebrity name. We find the look automatically.' },
             { num: '02', title: 'We pull the look', desc: 'Our AI searches the internet for their exact outfit — brand, designer, every detail.' },
@@ -170,7 +176,7 @@ export function ExplorePage() {
       </div>
 
       {/* 2026 Scoreboard */}
-      <div id="scoreboard" style={{ padding: '100px 48px',  }}>
+      <div id="scoreboard" style={{ padding: isMobile ? '60px 24px' : '100px 48px' }}>
         <div style={{ maxWidth: '1100px', margin: '0 auto' }}>
           <div style={{ fontSize: '11px', letterSpacing: '0.2em', color: '#888', textTransform: 'uppercase', marginBottom: '20px' }}>2026 scoreboard preview</div>
           <h2 style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 'clamp(36px,4vw,60px)', fontWeight: 300, lineHeight: 1.15, marginBottom: '40px', maxWidth: '560px' }}>
@@ -196,7 +202,7 @@ export function ExplorePage() {
       </div>
 
       {/* Quote */}
-      <div style={{ padding: '100px 48px', textAlign: 'center',  }}>
+      <div style={{ padding: isMobile ? '60px 24px' : '100px 48px', textAlign: 'center' }}>
         <p style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 'clamp(26px,3.5vw,48px)', fontWeight: 300, fontStyle: 'italic', color: '#fff', maxWidth: '760px', margin: '0 auto 24px', lineHeight: 1.35 }}>
           "Fashion is not something that exists in dresses only. Fashion is in the sky, in the street — fashion has to do with ideas."
         </p>
@@ -204,7 +210,13 @@ export function ExplorePage() {
       </div>
 
       {/* Footer */}
-      <footer style={{ padding: '40px 48px', borderTop: '0.5px solid #2a2a2a', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+      <footer style={{
+        padding: isMobile ? '32px 24px' : '40px 48px',
+        borderTop: '0.5px solid #2a2a2a',
+        display: 'flex', flexDirection: isMobile ? 'column' : 'row',
+        alignItems: isMobile ? 'flex-start' : 'center',
+        justifyContent: 'space-between', gap: isMobile ? '16px' : '0',
+      }}>
         <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: '18px', fontWeight: 300 }}>MetAI</div>
         <div style={{ fontSize: '12px', color: '#555' }}>© 2026 MetAI. Fashion criticism, powered by AI.</div>
         <div style={{ display: 'flex', gap: '24px' }}>

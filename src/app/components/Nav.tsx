@@ -1,6 +1,7 @@
 import { useNavigate, useLocation, Link } from "react-router";
 import { useRef, useEffect, useState } from "react";
 import { ArrowLeft } from "lucide-react";
+import { useIsMobile } from "../../hooks/useIsMobile";
 
 type NavProps = {
   back?: { to: string; label?: string };
@@ -11,6 +12,7 @@ export function Nav({ back }: NavProps) {
   const { pathname } = useLocation();
   const linksRef = useRef<HTMLDivElement>(null);
   const [indicator, setIndicator] = useState({ left: 0, width: 0, visible: false });
+  const isMobile = useIsMobile();
 
   const links = [
     { label: "Home", to: "/explore" },
@@ -35,7 +37,7 @@ export function Nav({ back }: NavProps) {
     <nav style={{
       position: "sticky", top: 0, zIndex: 100,
       display: "flex", alignItems: "center", justifyContent: "space-between",
-      padding: "20px 48px",
+      padding: isMobile ? "14px 20px" : "20px 48px",
       borderBottom: "0.5px solid #1a1a1a",
       background: "rgba(8,8,8,0.92)", backdropFilter: "blur(14px)",
     }}>
@@ -58,8 +60,8 @@ export function Nav({ back }: NavProps) {
       </div>
 
       {/* Right links */}
-      <div style={{ display: "flex", alignItems: "center", gap: "32px" }}>
-        <div ref={linksRef} style={{ display: "flex", alignItems: "center", gap: "32px", position: "relative" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: isMobile ? "12px" : "32px" }}>
+        <div ref={linksRef} style={{ display: isMobile ? "none" : "flex", alignItems: "center", gap: "32px", position: "relative" }}>
           {/* Sliding underline */}
           <span style={{
             position: "absolute", bottom: "-3px", height: "1px", background: "#fff",
@@ -97,13 +99,13 @@ export function Nav({ back }: NavProps) {
             fontSize: "13px",
             color: pathname === "/analyze" ? "#999" : "#080808",
             background: pathname === "/analyze" ? "transparent" : "#fff",
-            padding: "10px 24px", borderRadius: "100px",
+            padding: isMobile ? "8px 16px" : "10px 24px", borderRadius: "100px",
             border: pathname === "/analyze" ? "0.5px solid #333" : "none",
             cursor: "pointer", letterSpacing: "0.04em",
             transition: "all 0.2s ease",
           }}
         >
-          Analyze a look →
+          {isMobile ? "Analyze →" : "Analyze a look →"}
         </button>
       </div>
     </nav>

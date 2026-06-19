@@ -1,8 +1,10 @@
 import { useEffect, useRef } from "react";
 import { useNavigate } from "react-router";
+import { useIsMobile } from "../hooks/useIsMobile";
 
 export default function App() {
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
   const grainRef = useRef<HTMLCanvasElement>(null);
   const grainRunning = useRef(true);
 
@@ -95,11 +97,11 @@ export default function App() {
 
         {/* Gradient blocks grid */}
         <div style={{
-          position: 'absolute', inset: '32px', zIndex: 2,
+          position: 'absolute', inset: isMobile ? '12px' : '32px', zIndex: 2,
           display: 'grid',
-          gridTemplateColumns: '2fr 1.35fr 0.85fr',
-          gridTemplateRows: '1.6fr 0.65fr 1fr',
-          gap: '14px',
+          gridTemplateColumns: isMobile ? '1.4fr 1fr' : '2fr 1.35fr 0.85fr',
+          gridTemplateRows: isMobile ? '1fr 0.5fr 0.8fr' : '1.6fr 0.65fr 1fr',
+          gap: isMobile ? '8px' : '14px',
           perspective: '1000px',
         }}>
           <div className="block" style={{ gridColumn: '1', gridRow: '1/4', background: 'linear-gradient(160deg,#f87171,#fb923c,#f472b6,#c084fc,#fb923c,#f87171)', backgroundSize: '300% 300%', animation: 'flow1 10s ease infinite', borderRadius: '26px', boxShadow: '0 8px 32px rgba(0,0,0,0.6)', willChange: 'transform' }} />
