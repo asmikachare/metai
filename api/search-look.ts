@@ -17,11 +17,18 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
   const serperHeaders = { 'X-API-KEY': process.env.SERPER_API_KEY!, 'Content-Type': 'application/json' };
 
   try {
-    // Step 1: Web search for attendance evidence
-    const verifyRes = await fetch('https://google.serper.dev/search', {
-      method: 'POST', headers: serperHeaders,
-      body: JSON.stringify({ q: `${trimmedName} ${metYear} Met Gala attended red carpet`, num: 8 }),
-    }).then(r => r.json()).catch(() => null);
+    // Step 1: Run attendance search + image search in parallel (faster)
+    const [verifyRes, imageResRaw] = await Promise.all([
+      fetch('https://google.serper.dev/search', {
+        method: 'POST', headers: serperHeaders,
+        body: JSON.stringify({ q: `${trimmedName} ${metYear} Met Gala attended red carpet`, num: 8 }),
+      }).then(r => r.json()).catch(() => null),
+
+      fetch('https://google.serper.dev/images', {
+        method: 'POST', headers: serperHeaders,
+        body: JSON.stringify({ q: `${trimmedName} ${metYear} Met Gala ${theme} red carpet`, num: 10 }),
+      }).then(r => r.json()).catch(() => null),
+    ]);
 
     const snippets = [
       verifyRes?.answerBox?.answer ?? '',
@@ -29,7 +36,12 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
       ...((verifyRes?.organic ?? []) as any[]).slice(0, 6).map((r: any) => `${r.title ?? ''}: ${r.snippet ?? ''}`),
     ].filter(Boolean).join('\n').slice(0, 1200);
 
-    // Step 2: Claude verifies attendance from snippets — must be strict about the year
+    const allImages = ((imageResRaw?.images ?? []) as any[])
+      .slice(0, 10)
+      .map((item: any) => ({ url: item.imageUrl ?? '', thumbnail: item.thumbnailUrl ?? item.imageUrl ?? '', title: item.title ?? '' }))
+      .filter((img: any) => img.url);
+
+    // Step 2: Claude verifies attendance — strict about the specific year
     const verifyMsg = await anthropic.messages.create({
       model: 'claude-sonnet-4-6',
       max_tokens: 80,
@@ -89,26 +101,36 @@ Return JSON only: { "years": [array of year numbers] }` }],
       return;
     }
 
-    // Step 4: Attended — image search with theme-specific query, fetch extra to allow filtering
-    const imageRes = await fetch('https://google.serper.dev/images', {
-      method: 'POST', headers: serperHeaders,
-      body: JSON.stringify({ q: `${trimmedName} ${metYear} Met Gala ${theme} red carpet`, num: 10 }),
-    }).then(r => r.json()).catch(() => null);
+    // Step 4: Attended — Claude filters image titles to keep only year-matching ones
+    const titlesText = allImages.map((img, i) => `${i + 1}. ${img.title || '(no title)'}`).join('\n');
 
-    const allImages = ((imageRes?.images ?? []) as any[])
-      .slice(0, 10)
-      .map((item: any) => ({ url: item.imageUrl ?? '', thumbnail: item.thumbnailUrl ?? item.imageUrl ?? '', title: item.title ?? '' }))
-      .filter((img: any) => img.url);
+    const filterMsg = await anthropic.messages.create({
+      model: 'claude-sonnet-4-6',
+      max_tokens: 120,
+      system: 'You are a strict image filter. Return only valid JSON, no explanation.',
+      messages: [{ role: 'user', content: `These are image titles from a search for "${trimmedName}" at the ${metYear} Met Gala (theme: "${theme}").
 
-    // Drop images whose titles mention a year other than metYear
-    const yearFiltered = allImages.filter(img => {
-      const yearsInTitle = (img.title.match(/\b(20\d{2})\b/g) ?? []).map(Number);
-      if (yearsInTitle.length === 0) return true;
-      return yearsInTitle.some((y: number) => y === metYear);
+${titlesText}
+
+Which image numbers are from the ${metYear} Met Gala specifically? Exclude images that reference other years or events. If fewer than 3 are confirmed, also list uncertain ones (no year mentioned, could be ${metYear}).
+
+Return JSON only: { "confirmed": [1-based indices], "uncertain": [1-based indices] }` }],
     });
 
-    // Fall back to unfiltered if filtering removed too many
-    const images = (yearFiltered.length >= 2 ? yearFiltered : allImages).slice(0, 5);
+    const fText = filterMsg.content[0].type === 'text' ? filterMsg.content[0].text : '';
+    const fMatch = fText.match(/\{[\s\S]*?\}/);
+    const fData = fMatch ? JSON.parse(fMatch[0]) : { confirmed: [], uncertain: [] };
+
+    const confirmedSet = new Set(((fData.confirmed ?? []) as number[]).map(i => i - 1));
+    const uncertainSet = new Set(((fData.uncertain ?? []) as number[]).map(i => i - 1));
+
+    let filtered = allImages.filter((_, i) => confirmedSet.has(i));
+    if (filtered.length < 3) {
+      const extras = allImages.filter((_, i) => uncertainSet.has(i));
+      filtered = [...filtered, ...extras];
+    }
+    // If Claude filter was too aggressive, fall back to all images
+    const images = (filtered.length >= 3 ? filtered : allImages).slice(0, 5);
 
     sendJson(res, 200, { attended: true, images, topImage: images[0]?.url ?? null, suggestedYears: [] });
   } catch (err: any) {
