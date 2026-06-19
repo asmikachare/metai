@@ -256,6 +256,7 @@ export function AnalyzePage() {
   const [query, setQuery]           = useState('');
   const [images, setImages]         = useState<SearchImage[]>([]);
   const [selected, setSelected]     = useState<string | null>(null);
+  const [selectedThumb, setSelThumb] = useState<string | null>(null);
   const [uploadPreview, setPreview] = useState<string | null>(null);
   const [uploadData, setUpload]     = useState<{ base64: string; mediaType: string } | null>(null);
   const [dragging, setDragging]     = useState(false);
@@ -269,7 +270,7 @@ export function AnalyzePage() {
   const currentMetYear = MET_YEARS.find(y => y.year === selectedYear) ?? MET_YEARS[0];
 
   const reset = () => {
-    setPhase('idle'); setAnalysis(null); setImages([]); setSelected(null);
+    setPhase('idle'); setAnalysis(null); setImages([]); setSelected(null); setSelThumb(null);
     setPreview(null); setUpload(null); setQuery(''); setError(''); setSuggested([]);
   };
 
@@ -300,6 +301,7 @@ export function AnalyzePage() {
       if (!data.images?.length) throw new Error('No images found');
       setImages(data.images);
       setSelected(data.images[0].url);
+      setSelThumb(data.images[0].thumbnail || data.images[0].url);
       setPhase('idle');
     } catch (e: any) {
       setPhase('error'); setError(e.message ?? 'Search failed');
@@ -342,7 +344,7 @@ export function AnalyzePage() {
       const data = await res.json();
       if (!res.ok || data.error) throw new Error(data.error ?? 'Analysis failed');
       setAnalysis(data);
-      setResultImg(tab === 'search' ? selected! : uploadPreview!);
+      setResultImg(tab === 'search' ? (selectedThumb ?? selected!) : uploadPreview!);
       setPhase('done');
     } catch (e: any) {
       setPhase('error'); setError(e.message ?? 'Analysis failed');
@@ -475,7 +477,7 @@ export function AnalyzePage() {
                     {images.map((img, i) => (
                       <div
                         key={i}
-                        onClick={() => setSelected(img.url)}
+                        onClick={() => { setSelected(img.url); setSelThumb(img.thumbnail || img.url); }}
                         style={{
                           borderRadius: '10px', overflow: 'hidden', cursor: 'pointer',
                           aspectRatio: '2/3', background: '#111',

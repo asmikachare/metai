@@ -112,7 +112,13 @@ Return JSON only: { "years": [array of year numbers] }` }],
 
 ${titlesText}
 
-Which image numbers show BOTH: (1) the correct person "${trimmedName}" and (2) the ${metYear} Met Gala specifically? Exclude images of different people OR from different years/events. If fewer than 3 are confirmed, also list uncertain ones (appears to be the right person but year is unclear).
+Which image numbers show BOTH: (1) the correct person "${trimmedName}" and (2) the ${metYear} Met Gala specifically?
+
+- "confirmed": clearly shows ${trimmedName} at the ${metYear} Met Gala
+- "uncertain": appears to show ${trimmedName} but year is unclear from the title — still likely the right person
+- Exclude entirely: different person, different event, clearly different year
+
+If fewer than 3 are confirmed, pad with uncertain ones. Never include images of a different person in uncertain.
 
 Return JSON only: { "confirmed": [1-based indices], "uncertain": [1-based indices] }` }],
     });
