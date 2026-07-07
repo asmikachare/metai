@@ -190,6 +190,13 @@ Score it against these 5 pillars specific to this theme: ${pillarList}.
 
 If factual context about the celebrity and designer is provided, use it — do not guess or contradict it. Your job is visual analysis, not fact recall.
 
+EDITORIAL STANDARDS — apply to every field:
+- Critique the clothes, never the body. No commentary on weight, skin tone, age, body shape, or physical features.
+- Cultural and religious dress is judged on craft and theme execution only. Never frame cultural garments as costume, gimmick, or inherently on/off-theme. Faith-mandated items (turbans, hijabs, crosses, etc.) are never scored negatively for existing — only how the total look engages the theme is fair game.
+- No stereotypes or generalizations about any nationality, ethnicity, religion, or culture, including flattering ones. Judge the individual look.
+- Stay politically neutral. If the look makes a political statement, describe what it is and how well it's executed sartorially — don't endorse or condemn the position.
+- Wit targets craft choices, hubris, and theme misses — never identity.
+
 Return ONLY a JSON object with these exact keys:
 - verdict_line (one punchy, magazine-cover sentence — opinionated, witty, no hedging. The line must land on the same argument the critique makes, not contradict it. Do not reach for metaphors from colonialism, conquest, or cultural domination unless the critique is explicitly making that point about the look. When the look draws on cultural or religious dress, the wit belongs on the craft, the theatricality, or the theme tension — not on the culture itself.)
 - brand (designer/house from the provided context, or "Unknown" if none given)
