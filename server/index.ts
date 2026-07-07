@@ -460,7 +460,7 @@ app.post('/api/archive-year', async (req, res) => {
     fetch('https://google.serper.dev/images', {
       method: 'POST',
       headers: { 'X-API-KEY': process.env.SERPER_API_KEY!, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ q: `${year} Met Gala best looks red carpet`, num: 6 }),
+      body: JSON.stringify({ q: `${year} Met Gala best looks red carpet`, num: 10 }),
     }).then(r => r.json()),
 
     anthropic.messages.create({
@@ -480,7 +480,7 @@ app.post('/api/archive-year', async (req, res) => {
 
   const images = deprioritizeStock(
     imageResult.status === 'fulfilled'
-      ? ((imageResult.value as any).images ?? []).slice(0, 6)
+      ? ((imageResult.value as any).images ?? []).slice(0, 10)
           .map((item: any) => ({ url: item.imageUrl ?? '', thumbnail: item.thumbnailUrl ?? item.imageUrl ?? '', title: item.title ?? '' }))
           .filter((img: any) => img.url)
       : []

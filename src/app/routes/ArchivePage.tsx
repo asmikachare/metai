@@ -289,6 +289,7 @@ function Skeleton() {
 
 function ExpansionPanel({ year, data, visible, navigate }: { year: number; data: YearData | undefined; visible: boolean; navigate: (p: string) => void }) {
   const isMobile = useIsMobile();
+  const [failedIdxs, setFailedIdxs] = useState<Set<number>>(new Set());
   return (
     <div style={{
       overflow: 'hidden',
@@ -329,7 +330,11 @@ function ExpansionPanel({ year, data, visible, navigate }: { year: number; data:
 
           {/* Right — images */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '8px' }}>
-            {(data.images ?? []).slice(0, 6).map((img, i) => (
+            {(data.images ?? [])
+              .map((img, i) => ({ img, i }))
+              .filter(({ i }) => !failedIdxs.has(i))
+              .slice(0, 6)
+              .map(({ img, i }) => (
               <div
                 key={i}
                 onClick={() => navigate(`/analyze?year=${year}`)}
@@ -338,7 +343,7 @@ function ExpansionPanel({ year, data, visible, navigate }: { year: number; data:
                 onMouseLeave={e => (e.currentTarget.style.opacity = '1')}
               >
                 <img src={img.thumbnail || img.url} alt={img.title} style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'top center' }}
-                  onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                  onError={() => setFailedIdxs(prev => new Set([...prev, i]))} />
               </div>
             ))}
           </div>
@@ -509,9 +514,7 @@ export function ArchivePage() {
         <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: '18px', fontWeight: 300 }}>MetAI</div>
         <div style={{ fontSize: '12px', color: '#333' }}>© 2026 MetAI. Fashion criticism, powered by AI.</div>
         <div style={{ display: 'flex', gap: '24px' }}>
-          {['Privacy', 'Terms', 'Contact'].map(l => (
-            <a key={l} href="#" style={{ fontSize: '12px', color: '#555', textDecoration: 'none' }}>{l}</a>
-          ))}
+          <a href="https://asmikachare.vercel.app" target="_blank" rel="noopener noreferrer" style={{ fontSize: '12px', color: '#555', textDecoration: 'none' }}>Contact</a>
         </div>
       </footer>
     </div>

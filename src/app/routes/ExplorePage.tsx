@@ -220,9 +220,7 @@ export function ExplorePage() {
         <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: '18px', fontWeight: 300 }}>MetAI</div>
         <div style={{ fontSize: '12px', color: '#555' }}>© 2026 MetAI. Fashion criticism, powered by AI.</div>
         <div style={{ display: 'flex', gap: '24px' }}>
-          {['Privacy', 'Terms', 'Contact'].map(l => (
-            <a key={l} href="#" style={{ fontSize: '12px', color: '#666', textDecoration: 'none' }}>{l}</a>
-          ))}
+          <a href="https://asmikachare.vercel.app" target="_blank" rel="noopener noreferrer" style={{ fontSize: '12px', color: '#666', textDecoration: 'none' }}>Contact</a>
         </div>
       </footer>
     </div>

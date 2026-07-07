@@ -17,7 +17,7 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
   const [imageResult, claudeResult] = await Promise.allSettled([
     fetch('https://google.serper.dev/images', {
       method: 'POST', headers: serperHeaders,
-      body: JSON.stringify({ q: `${year} Met Gala best looks red carpet`, num: 6 }),
+      body: JSON.stringify({ q: `${year} Met Gala best looks red carpet`, num: 10 }),
     }).then(r => r.json()),
 
     anthropic.messages.create({
@@ -37,7 +37,7 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
 
   const images = deprioritizeStock(
     imageResult.status === 'fulfilled'
-      ? ((imageResult.value as any).images ?? []).slice(0, 6)
+      ? ((imageResult.value as any).images ?? []).slice(0, 10)
           .map((item: any) => ({ url: item.imageUrl ?? '', thumbnail: item.thumbnailUrl ?? item.imageUrl ?? '', title: item.title ?? '' }))
           .filter((img: any) => img.url)
       : []
