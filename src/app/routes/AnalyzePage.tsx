@@ -1,5 +1,5 @@
 import { useState, useRef, DragEvent } from 'react';
-import { Search, Upload, Sparkles, ChevronDown } from 'lucide-react';
+import { Search, Upload, ChevronDown } from 'lucide-react';
 import { Nav } from '../components/Nav';
 import { useSearchParams } from 'react-router';
 import type { LookAnalysis, ArtReference, SearchImage } from '../../types';
@@ -360,7 +360,6 @@ export function AnalyzePage() {
   return (
     <div style={{ minHeight: '100vh', background: '#080808', fontFamily: "'DM Sans',sans-serif" }}>
       <style>{`
-        @keyframes spin { to { transform: rotate(360deg); } }
         .meta-input {
           width: 100%; background: #0d0d0d !important; border: 0.5px solid #2a2a2a !important;
           color: #fff !important; border-radius: 12px; height: 52px;
@@ -460,11 +459,13 @@ export function AnalyzePage() {
                   onClick={handleSearch}
                   disabled={!query.trim() || phase === 'searching'}
                   style={{
-                    padding: '0 22px', background: '#fff', color: '#080808',
-                    border: 'none', borderRadius: '12px', cursor: 'pointer',
+                    padding: '0 22px',
+                    background: !query.trim() || phase === 'searching' ? '#111' : '#fff',
+                    color: !query.trim() || phase === 'searching' ? '#555' : '#080808',
+                    border: !query.trim() || phase === 'searching' ? '0.5px solid #1a1a1a' : 'none',
+                    borderRadius: '12px', cursor: 'pointer',
                     fontSize: '13px', letterSpacing: '0.04em', flexShrink: 0,
-                    opacity: !query.trim() || phase === 'searching' ? 0.4 : 1,
-                    transition: 'opacity 0.2s',
+                    transition: 'all 0.2s',
                   }}
                 >
                   {phase === 'searching' ? 'Finding...' : 'Find'}
@@ -585,25 +586,30 @@ export function AnalyzePage() {
           )}
 
           {/* Analyze button */}
-          <button
-            onClick={handleAnalyze}
-            disabled={!canAnalyze}
-            style={{
-              width: '100%', padding: '16px', fontSize: '14px',
-              color: phase === 'analyzing' ? '#666' : canAnalyze ? '#080808' : '#555',
-              background: phase === 'analyzing' ? '#111' : canAnalyze ? '#fff' : '#111',
-              border: canAnalyze && phase !== 'analyzing' ? 'none' : '0.5px solid #1a1a1a',
-              borderRadius: '100px', cursor: canAnalyze ? 'pointer' : 'not-allowed',
-              letterSpacing: '0.04em', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
-              transition: 'all 0.2s',
-            }}
-          >
-            <Sparkles
-              size={16}
-              style={{ animation: phase === 'analyzing' ? 'spin 1.2s linear infinite' : 'none' }}
-            />
-            {phase === 'analyzing' ? 'Analyzing...' : 'Analyze this look'}
-          </button>
+          <div>
+            <button
+              onClick={handleAnalyze}
+              disabled={!canAnalyze}
+              style={{
+                width: '100%', padding: '16px', fontSize: '14px',
+                color: canAnalyze && phase !== 'analyzing' ? '#080808' : '#555',
+                background: canAnalyze && phase !== 'analyzing' ? '#fff' : 'transparent',
+                border: canAnalyze && phase !== 'analyzing' ? 'none' : '0.5px solid #1a1a1a',
+                borderRadius: '100px',
+                cursor: canAnalyze && phase !== 'analyzing' ? 'pointer' : 'default',
+                letterSpacing: '0.04em',
+                transition: 'all 0.2s',
+                opacity: phase === 'analyzing' ? 0.55 : 1,
+              }}
+            >
+              {phase === 'analyzing' ? 'Analyzing...' : 'Analyze this look →'}
+            </button>
+            {!canAnalyze && phase !== 'analyzing' && (
+              <div style={{ fontSize: '10px', letterSpacing: '0.18em', textTransform: 'uppercase', color: '#444', textAlign: 'center', marginTop: '12px' }}>
+                {tab === 'search' ? 'Select a photo first' : 'Drop a photo first'}
+              </div>
+            )}
+          </div>
         </div>
       )}
     </div>
