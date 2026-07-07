@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router';
 import { Nav } from '../components/Nav';
 import { ChevronRight, ChevronLeft } from 'lucide-react';
@@ -74,6 +74,27 @@ function CardSwiper() {
   const [dragOffset, setDragOffset] = useState(0);
   const dragStartX = useRef<number | null>(null);
   const dragging = useRef(false);
+  const [cardImages, setCardImages] = useState<Record<string, string>>({});
+  const fetchingRef = useRef<Set<string>>(new Set());
+
+  useEffect(() => {
+    const toFetch = [CARDS[order[0]]?.year, CARDS[order[1]]?.year]
+      .filter((y): y is string => !!y && !(y in cardImages) && !fetchingRef.current.has(y));
+    toFetch.forEach(year => {
+      fetchingRef.current.add(year);
+      fetch('/api/archive-year', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ year: parseInt(year) }),
+      })
+        .then(r => r.json())
+        .then((data: { images?: { thumbnail?: string; url?: string }[] }) => {
+          const url = data.images?.[0]?.thumbnail ?? data.images?.[0]?.url ?? '';
+          if (url) setCardImages(prev => ({ ...prev, [year]: url }));
+        })
+        .catch(() => { /* keep local fallback */ });
+    });
+  }, [order]);
 
   const BASE = [
     { x: 0,  y: 0,  rot: 0, scale: 1.00, opacity: 1.00, zIndex: 12 },
@@ -191,9 +212,18 @@ function CardSwiper() {
               }}
             >
               <div style={{ width: '100%', height: '100%', background: card.gradient, position: 'relative' }}>
-                {card.src && (
-                  <img src={card.src} alt={card.label} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'top' }} />
+                {(cardImages[card.year] || card.src) && (
+                  <img
+                    src={cardImages[card.year] || card.src}
+                    alt={card.label}
+                    style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'top' }}
+                    onError={e => {
+                      const img = e.target as HTMLImageElement;
+                      if (cardImages[card.year] && img.src !== card.src) img.src = card.src;
+                    }}
+                  />
                 )}
+                <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, transparent 40%, rgba(8,8,8,0.88))' }} />
                 {isFront && (
                   <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: '40px 24px 24px', background: 'linear-gradient(to top, rgba(0,0,0,0.75) 0%, transparent 100%)' }}>
                     <div style={{ fontSize: '11px', letterSpacing: '0.16em', color: 'rgba(255,255,255,0.6)', textTransform: 'uppercase', marginBottom: '6px' }}>{card.label}</div>

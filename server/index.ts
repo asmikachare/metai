@@ -9,6 +9,8 @@ app.use(express.json({ limit: '20mb' }));
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
+const archiveCache = new Map<number, unknown>();
+
 type PillarDef = { label: string; weight: number };
 
 // Per-year pillar definitions. Weights sum to 1.0 and reflect each theme's hierarchy.
@@ -430,6 +432,12 @@ app.post('/api/archive-year', async (req, res) => {
   const { year } = req.body as { year: number };
   if (!year) return res.status(400).json({ error: 'year required' });
 
+  if (archiveCache.has(year)) {
+    console.log(`[cache hit] archive-year ${year}`);
+    return res.json(archiveCache.get(year));
+  }
+  console.log(`[cache miss] archive-year ${year}`);
+
   const theme = YEAR_THEMES[year] ?? `${year} Met Gala`;
 
   const [imageResult, claudeResult] = await Promise.allSettled([
@@ -462,11 +470,13 @@ app.post('/api/archive-year', async (req, res) => {
 
   const editorial = claudeResult.status === 'fulfilled' ? claudeResult.value : null;
 
-  res.json({
+  const result = {
     images,
     blurb: editorial?.blurb ?? '',
     must_knows: editorial?.must_knows ?? [],
-  });
+  };
+  archiveCache.set(year, result);
+  res.json(result);
 });
 
 const PORT = process.env.PORT ?? 3001;
