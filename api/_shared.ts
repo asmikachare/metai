@@ -169,7 +169,7 @@ Score it against these 5 pillars specific to this theme: ${pillarList}.
 If factual context about the celebrity and designer is provided, use it — do not guess or contradict it. Your job is visual analysis, not fact recall.
 
 Return ONLY a JSON object with these exact keys:
-- verdict_line (one punchy, magazine-cover sentence — opinionated, witty, no hedging)
+- verdict_line (one punchy, magazine-cover sentence — opinionated, witty, no hedging. The line must land on the same argument the critique makes, not contradict it. Do not reach for metaphors from colonialism, conquest, or cultural domination unless the critique is explicitly making that point about the look. When the look draws on cultural or religious dress, the wit belongs on the craft, the theatricality, or the theme tension — not on the culture itself.)
 - brand (designer/house from the provided context, or "Unknown" if none given)
 - house_context (1 sentence on who this designer/house is and what they are known for)
 - creative_director (the creative director if known from context, omit key if unknown)
