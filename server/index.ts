@@ -11,6 +11,15 @@ const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
 const archiveCache = new Map<number, unknown>();
 
+const STOCK_DOMAINS = ['gettyimages', 'shutterstock', 'alamy', 'istockphoto', 'apimages', 'depositphotos'];
+function deprioritizeStock<T extends { url: string; thumbnail: string; title: string }>(imgs: T[]): T[] {
+  const isStock = (img: T) => {
+    const t = `${img.url} ${img.thumbnail} ${img.title}`.toLowerCase();
+    return STOCK_DOMAINS.some(d => t.includes(d));
+  };
+  return [...imgs.filter(img => !isStock(img)), ...imgs.filter(img => isStock(img))];
+}
+
 type PillarDef = { label: string; weight: number };
 
 // Per-year pillar definitions. Weights sum to 1.0 and reflect each theme's hierarchy.
@@ -324,7 +333,7 @@ Return JSON only: { "confirmed": [1-based indices], "uncertain": [1-based indice
       filtered = [...filtered, ...extras];
     }
     // If Claude filter was too aggressive, fall back to all images
-    const images = (filtered.length >= 3 ? filtered : allImages).slice(0, 5);
+    const images = deprioritizeStock(filtered.length >= 3 ? filtered : allImages).slice(0, 5);
 
     res.json({ attended: true, images, topImage: images[0]?.url ?? null, suggestedYears: [] });
   } catch (err: any) {
@@ -462,11 +471,13 @@ app.post('/api/archive-year', async (req, res) => {
     }),
   ]);
 
-  const images = imageResult.status === 'fulfilled'
-    ? ((imageResult.value as any).images ?? []).slice(0, 6)
-        .map((item: any) => ({ url: item.imageUrl ?? '', thumbnail: item.thumbnailUrl ?? item.imageUrl ?? '', title: item.title ?? '' }))
-        .filter((img: any) => img.url)
-    : [];
+  const images = deprioritizeStock(
+    imageResult.status === 'fulfilled'
+      ? ((imageResult.value as any).images ?? []).slice(0, 6)
+          .map((item: any) => ({ url: item.imageUrl ?? '', thumbnail: item.thumbnailUrl ?? item.imageUrl ?? '', title: item.title ?? '' }))
+          .filter((img: any) => img.url)
+      : []
+  );
 
   const editorial = claudeResult.status === 'fulfilled' ? claudeResult.value : null;
 

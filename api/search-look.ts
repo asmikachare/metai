@@ -1,6 +1,6 @@
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import Anthropic from '@anthropic-ai/sdk';
-import { parseBody, sendJson, YEAR_THEMES } from './_shared.js';
+import { parseBody, sendJson, deprioritizeStock, YEAR_THEMES } from './_shared.js';
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
@@ -136,7 +136,7 @@ Return JSON only: { "confirmed": [1-based indices], "uncertain": [1-based indice
       filtered = [...filtered, ...extras];
     }
     // If Claude filter was too aggressive, fall back to all images
-    const images = (filtered.length >= 3 ? filtered : allImages).slice(0, 5);
+    const images = deprioritizeStock(filtered.length >= 3 ? filtered : allImages).slice(0, 5);
 
     sendJson(res, 200, { attended: true, images, topImage: images[0]?.url ?? null, suggestedYears: [] });
   } catch (err: any) {

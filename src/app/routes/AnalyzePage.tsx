@@ -11,6 +11,13 @@ import { useIsMobile } from '../../hooks/useIsMobile';
 const scoreColor = (s: number) =>
   s >= 7.5 ? '#4ade80' : s >= 5 ? '#fb923c' : '#f87171';
 
+const verdictColor = (verdict: string): string => {
+  if (verdict === 'On Theme')  return '#4ade80';
+  if (verdict === 'Partial')   return '#fb923c';
+  if (verdict === 'Off Theme') return '#d97706';
+  return '#ef4444'; // Miss
+};
+
 const verdictStyle: Record<string, { bg: string; color: string }> = {
   'On Theme':  { bg: 'rgba(74,222,128,0.12)',  color: '#4ade80' },
   'Partial':   { bg: 'rgba(251,146,60,0.12)',  color: '#fb923c' },
@@ -20,8 +27,8 @@ const verdictStyle: Record<string, { bg: string; color: string }> = {
 
 // ─── score wheel ─────────────────────────────────────────────────────────────
 
-function ScoreWheel({ score }: { score: number }) {
-  const color = scoreColor(score);
+function ScoreWheel({ score, verdict }: { score: number; verdict: string }) {
+  const color = verdictColor(verdict);
   const r = 46, cx = 60, cy = 60;
   const circ = 2 * Math.PI * r;
   const offset = circ * (1 - score / 10);
@@ -97,7 +104,7 @@ function AnalysisResults({
   analysis: LookAnalysis; imageUrl: string; name?: string; onReset: () => void;
 }) {
   const vs = verdictStyle[analysis.verdict] ?? verdictStyle['Miss'];
-  const color = scoreColor(analysis.score);
+  const color = verdictColor(analysis.verdict);
   const isMobile = useIsMobile();
 
   return (
@@ -113,7 +120,7 @@ function AnalysisResults({
 
           {/* Score + verdict + identity */}
           <div style={{ display: 'flex', alignItems: 'flex-start', gap: '20px' }}>
-            <ScoreWheel score={analysis.score} />
+            <ScoreWheel score={analysis.score} verdict={analysis.verdict} />
             <div style={{ paddingTop: '6px' }}>
               <span style={{
                 display: 'inline-block', fontSize: '10px', letterSpacing: '0.16em',

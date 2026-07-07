@@ -183,6 +183,15 @@ Return ONLY a JSON object with these exact keys:
 - what_they_should_have_worn (1-2 specific sentences referencing real pieces or direction that would have fit better)`;
 }
 
+const STOCK_DOMAINS = ['gettyimages', 'shutterstock', 'alamy', 'istockphoto', 'apimages', 'depositphotos'];
+export function deprioritizeStock<T extends { url: string; thumbnail: string; title: string }>(imgs: T[]): T[] {
+  const isStock = (img: T) => {
+    const t = `${img.url} ${img.thumbnail} ${img.title}`.toLowerCase();
+    return STOCK_DOMAINS.some(d => t.includes(d));
+  };
+  return [...imgs.filter(img => !isStock(img)), ...imgs.filter(img => isStock(img))];
+}
+
 export async function parseBody(req: IncomingMessage): Promise<any> {
   return new Promise((resolve) => {
     let s = '';

@@ -1,6 +1,6 @@
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import Anthropic from '@anthropic-ai/sdk';
-import { parseBody, sendJson, YEAR_THEMES } from './_shared.js';
+import { parseBody, sendJson, deprioritizeStock, YEAR_THEMES } from './_shared.js';
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
@@ -35,11 +35,13 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
     }),
   ]);
 
-  const images = imageResult.status === 'fulfilled'
-    ? ((imageResult.value as any).images ?? []).slice(0, 6)
-        .map((item: any) => ({ url: item.imageUrl ?? '', thumbnail: item.thumbnailUrl ?? item.imageUrl ?? '', title: item.title ?? '' }))
-        .filter((img: any) => img.url)
-    : [];
+  const images = deprioritizeStock(
+    imageResult.status === 'fulfilled'
+      ? ((imageResult.value as any).images ?? []).slice(0, 6)
+          .map((item: any) => ({ url: item.imageUrl ?? '', thumbnail: item.thumbnailUrl ?? item.imageUrl ?? '', title: item.title ?? '' }))
+          .filter((img: any) => img.url)
+      : []
+  );
 
   const editorial = claudeResult.status === 'fulfilled' ? claudeResult.value : null;
 
