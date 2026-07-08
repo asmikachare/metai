@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router';
 import { Nav } from '../components/Nav';
 import { ChevronRight, ChevronLeft } from 'lucide-react';
 import { useIsMobile } from '../../hooks/useIsMobile';
+import { useRotatingText } from '../../hooks/useRotatingText';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -287,9 +288,14 @@ function Skeleton() {
 
 // ─── Expansion panel ──────────────────────────────────────────────────────────
 
-function ExpansionPanel({ year, data, visible, navigate }: { year: number; data: YearData | undefined; visible: boolean; navigate: (p: string) => void }) {
+function ExpansionPanel({ year, data, visible, navigate, onRetry }: { year: number; data: YearData | undefined; visible: boolean; navigate: (p: string) => void; onRetry: () => void }) {
   const isMobile = useIsMobile();
   const [failedIdxs, setFailedIdxs] = useState<Set<number>>(new Set());
+  const { text: archiveLoadingText, opacity: archiveLoadingOpacity } = useRotatingText(
+    [`Opening the ${year} archive...`, 'Pulling editorial context...'],
+    2500,
+    data?.status === 'loading',
+  );
   return (
     <div style={{
       overflow: 'hidden',
@@ -299,7 +305,14 @@ function ExpansionPanel({ year, data, visible, navigate }: { year: number; data:
       borderTop: visible ? '0.5px solid #1a1a1a' : 'none',
       background: '#0a0a0a',
     }}>
-      {data?.status === 'loading' && <Skeleton />}
+      {data?.status === 'loading' && (
+        <>
+          <div style={{ padding: isMobile ? '20px 24px 0' : '24px 48px 0', fontSize: '11px', letterSpacing: '0.18em', textTransform: 'uppercase', color: '#555', opacity: archiveLoadingOpacity, transition: 'opacity 0.25s ease' }}>
+            {archiveLoadingText}
+          </div>
+          <Skeleton />
+        </>
+      )}
 
       {data?.status === 'done' && (
         <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: isMobile ? '24px' : '48px', padding: isMobile ? '24px' : '40px 48px' }}>
@@ -351,8 +364,18 @@ function ExpansionPanel({ year, data, visible, navigate }: { year: number; data:
       )}
 
       {data?.status === 'error' && (
-        <div style={{ padding: '32px 48px', fontSize: '13px', color: '#555' }}>
-          Couldn't load this year. Try again.
+        <div style={{ padding: isMobile ? '24px' : '32px 48px' }}>
+          <div style={{ background: 'rgba(248,113,113,0.08)', border: '0.5px solid rgba(248,113,113,0.2)', borderRadius: '10px', padding: '18px 20px' }}>
+            <p style={{ fontSize: '13px', color: '#f87171', lineHeight: 1.6, margin: '0 0 14px' }}>
+              The {year} archive is having a moment. Try again.
+            </p>
+            <button
+              onClick={onRetry}
+              style={{ fontSize: '11px', letterSpacing: '0.14em', textTransform: 'uppercase', color: '#f87171', background: 'transparent', border: '0.5px solid rgba(248,113,113,0.3)', padding: '7px 16px', borderRadius: '100px', cursor: 'pointer' }}
+            >
+              Try again →
+            </button>
+          </div>
         </div>
       )}
     </div>
@@ -374,6 +397,25 @@ export function ArchivePage() {
     if (expandedYear === year) { setExpandedYear(null); return; }
     setExpandedYear(year);
     if (yearDataRef.current[year]) return; // already fetched
+    yearDataRef.current[year] = { status: 'loading' };
+    setYearData({ ...yearDataRef.current });
+    fetch('/api/archive-year', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ year }),
+    })
+      .then(r => r.json())
+      .then(data => {
+        yearDataRef.current[year] = { status: 'done', ...data };
+        setYearData({ ...yearDataRef.current });
+      })
+      .catch(() => {
+        yearDataRef.current[year] = { status: 'error' };
+        setYearData({ ...yearDataRef.current });
+      });
+  };
+
+  const handleRetry = (year: number) => {
     yearDataRef.current[year] = { status: 'loading' };
     setYearData({ ...yearDataRef.current });
     fetch('/api/archive-year', {
@@ -497,6 +539,7 @@ export function ArchivePage() {
                 data={expandedYear ? yearData[expandedYear] : undefined}
                 visible={activeInRow && expandedYear !== null}
                 navigate={navigate}
+                onRetry={() => expandedYear && handleRetry(expandedYear)}
               />
             </div>
           );

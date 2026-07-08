@@ -5,6 +5,7 @@ import { useSearchParams } from 'react-router';
 import type { LookAnalysis, ArtReference, SearchImage } from '../../types';
 import { MET_YEARS } from '../data/metYears';
 import { useIsMobile } from '../../hooks/useIsMobile';
+import { useRotatingText } from '../../hooks/useRotatingText';
 
 // ─── helpers ────────────────────────────────────────────────────────────────
 
@@ -24,6 +25,25 @@ const verdictStyle: Record<string, { bg: string; color: string }> = {
   'Off Theme': { bg: 'rgba(248,113,113,0.12)', color: '#f87171' },
   'Miss':      { bg: 'rgba(248,113,113,0.08)', color: '#ef4444' },
 };
+
+// ─── error types + loading lines ────────────────────────────────────────────
+
+type ErrorCode = 'not_attended' | 'no_images' | 'bad_photo' | 'api_error' | 'network';
+
+const ERROR_COPY: Record<Exclude<ErrorCode, 'not_attended'>, string> = {
+  no_images: "The archive came up empty. Check the spelling, or try another year.",
+  bad_photo: "The critic couldn't get a good look at this one. Try a different photo.",
+  api_error: "The critic is speechless. That almost never happens — try again.",
+  network:   "Lost connection to the atelier. Check your internet and retry.",
+};
+
+const LOADING_LINES = [
+  'Pulling the look...',
+  'Consulting the archive...',
+  'Checking the theme brief...',
+  'Examining the tailoring...',
+  'Drafting the verdict...',
+];
 
 // ─── score wheel ─────────────────────────────────────────────────────────────
 
@@ -273,7 +293,8 @@ export function AnalyzePage() {
   const [phase, setPhase]           = useState<Phase>('idle');
   const [analysis, setAnalysis]         = useState<LookAnalysis | null>(null);
   const [resultImage, setResultImg]     = useState<string | null>(null);
-  const [errorMsg, setError]            = useState('');
+  const [errorMsg, setError]            = useState<ErrorCode | ''>('');
+  const [errorSource, setErrorSource]   = useState<'search' | 'analyze' | null>(null);
   const [suggestedYears, setSuggested]  = useState<number[]>([]);
   const fileRef = useRef<HTMLInputElement>(null);
 
@@ -281,7 +302,7 @@ export function AnalyzePage() {
 
   const reset = () => {
     setPhase('idle'); setAnalysis(null); setImages([]); setSelected(null); setSelThumb(null);
-    setPreview(null); setUpload(null); setQuery(''); setError(''); setSuggested([]);
+    setPreview(null); setUpload(null); setQuery(''); setError(''); setSuggested([]); setErrorSource(null);
   };
 
   const switchTab = (t: 'search' | 'upload') => { setTab(t); reset(); };
@@ -290,31 +311,33 @@ export function AnalyzePage() {
   // ── search ─────────────────────────────────────────────────────────────────
   const handleSearch = async () => {
     if (!query.trim()) return;
-    setPhase('searching'); setImages([]); setSelected(null); setSuggested([]);
+    setPhase('searching'); setImages([]); setSelected(null); setSuggested([]); setError(''); setErrorSource('search');
     try {
       const res = await fetch('/api/search-look', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name: query.trim(), year: selectedYear }),
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? 'Search failed');
+      let data: any;
+      try { data = await res.json(); } catch { throw Object.assign(new Error('Response parse failed'), { code: 'api_error' as ErrorCode }); }
+      if (!res.ok) throw Object.assign(new Error(data.error ?? 'Search failed'), { code: 'no_images' as ErrorCode });
 
       // Celebrity didn't attend this year
       if (!data.attended && (!data.images || data.images.length === 0)) {
         setSuggested(data.suggestedYears ?? []);
-        setPhase('error');
-        setError('not_attended');
+        setPhase('error'); setError('not_attended');
         return;
       }
 
-      if (!data.images?.length) throw new Error('No images found');
+      if (!data.images?.length) { setPhase('error'); setError('no_images'); return; }
       setImages(data.images);
       setSelected(data.images[0].url);
       setSelThumb(data.images[0].thumbnail || data.images[0].url);
       setPhase('idle');
     } catch (e: any) {
-      setPhase('error'); setError(e.message ?? 'Search failed');
+      console.error('[search-look]', e);
+      setPhase('error');
+      setError(e instanceof TypeError ? 'network' : ((e.code as ErrorCode) ?? 'no_images'));
     }
   };
 
@@ -340,7 +363,7 @@ export function AnalyzePage() {
 
   // ── analyze ────────────────────────────────────────────────────────────────
   const handleAnalyze = async () => {
-    setPhase('analyzing');
+    setPhase('analyzing'); setError(''); setErrorSource('analyze');
     const payload = tab === 'search'
       ? { imageUrl: selected!, celebrityName: query, candidateUrls: images.map(i => i.url), year: selectedYear }
       : { imageBase64: uploadData!.base64, mediaType: uploadData!.mediaType, year: selectedYear };
@@ -351,17 +374,21 @@ export function AnalyzePage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
-      const data = await res.json();
-      if (!res.ok || data.error) throw new Error(data.error ?? 'Analysis failed');
+      let data: any;
+      try { data = await res.json(); } catch { throw Object.assign(new Error('Response parse failed'), { code: 'api_error' as ErrorCode }); }
+      if (!res.ok || data.error) throw Object.assign(new Error(data.error ?? 'Analysis failed'), { code: 'bad_photo' as ErrorCode });
       setAnalysis(data);
       setResultImg(tab === 'search' ? (selectedThumb ?? selected!) : uploadPreview!);
       setPhase('done');
     } catch (e: any) {
-      setPhase('error'); setError(e.message ?? 'Analysis failed');
+      console.error('[analyze]', e);
+      setPhase('error');
+      setError(e instanceof TypeError ? 'network' : ((e.code as ErrorCode) ?? 'bad_photo'));
     }
   };
 
   const canAnalyze = (tab === 'search' ? !!selected : !!uploadData) && phase !== 'analyzing';
+  const { text: loadingText, opacity: loadingOpacity } = useRotatingText(LOADING_LINES, 2500, phase === 'analyzing');
 
   // ── render ─────────────────────────────────────────────────────────────────
   return (
@@ -585,10 +612,19 @@ export function AnalyzePage() {
           {phase === 'error' && errorMsg !== 'not_attended' && (
             <div style={{
               background: 'rgba(248,113,113,0.08)', border: '0.5px solid rgba(248,113,113,0.2)',
-              borderRadius: '10px', padding: '14px 18px', marginBottom: '20px',
-              fontSize: '13px', color: '#f87171',
+              borderRadius: '10px', padding: '18px 20px', marginBottom: '20px',
             }}>
-              {errorMsg}
+              <p style={{ fontSize: '13px', color: '#f87171', lineHeight: 1.6, margin: errorMsg === 'no_images' ? 0 : '0 0 14px' }}>
+                {ERROR_COPY[errorMsg as Exclude<ErrorCode, 'not_attended'>] ?? ERROR_COPY.bad_photo}
+              </p>
+              {errorMsg !== 'no_images' && (
+                <button
+                  onClick={errorSource === 'search' ? handleSearch : handleAnalyze}
+                  style={{ fontSize: '11px', letterSpacing: '0.14em', textTransform: 'uppercase', color: '#f87171', background: 'transparent', border: '0.5px solid rgba(248,113,113,0.3)', padding: '7px 16px', borderRadius: '100px', cursor: 'pointer' }}
+                >
+                  Try again →
+                </button>
+              )}
             </div>
           )}
 
@@ -609,7 +645,10 @@ export function AnalyzePage() {
                 opacity: phase === 'analyzing' ? 0.55 : 1,
               }}
             >
-              {phase === 'analyzing' ? 'Analyzing...' : 'Analyze this look →'}
+              {phase === 'analyzing'
+                ? <span style={{ opacity: loadingOpacity, transition: 'opacity 0.25s ease' }}>{loadingText}</span>
+                : 'Analyze this look →'
+              }
             </button>
             {!canAnalyze && phase !== 'analyzing' && (
               <div style={{ fontSize: '10px', letterSpacing: '0.18em', textTransform: 'uppercase', color: '#444', textAlign: 'center', marginTop: '12px' }}>
