@@ -276,9 +276,9 @@ function Skeleton() {
           ))}
         </div>
       </div>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '8px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2,1fr)' : 'repeat(3,1fr)', gap: '8px' }}>
         {Array.from({ length: 6 }).map((_, i) => (
-          <div key={i} style={{ height: '260px', borderRadius: '10px', background: 'linear-gradient(90deg,#1a1a1a 25%,#242424 50%,#1a1a1a 75%)', backgroundSize: '200% 100%', animation: `shimmer 1.4s infinite ${i * 0.1}s` }} />
+          <div key={i} style={{ height: isMobile ? '180px' : '260px', borderRadius: '10px', background: 'linear-gradient(90deg,#1a1a1a 25%,#242424 50%,#1a1a1a 75%)', backgroundSize: '200% 100%', animation: `shimmer 1.4s infinite ${i * 0.1}s` }} />
         ))}
       </div>
     </div>
@@ -329,7 +329,7 @@ function ExpansionPanel({ year, data, visible, navigate }: { year: number; data:
           </div>
 
           {/* Right — images */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '8px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2,1fr)' : 'repeat(3,1fr)', gap: '8px' }}>
             {(data.images ?? [])
               .map((img, i) => ({ img, i }))
               .filter(({ i }) => !failedIdxs.has(i))
@@ -338,7 +338,7 @@ function ExpansionPanel({ year, data, visible, navigate }: { year: number; data:
               <div
                 key={i}
                 onClick={() => navigate(`/analyze?year=${year}`)}
-                style={{ height: '260px', borderRadius: '10px', overflow: 'hidden', background: '#111', cursor: 'pointer', transition: 'opacity 0.2s ease' }}
+                style={{ height: isMobile ? '180px' : '260px', borderRadius: '10px', overflow: 'hidden', background: '#111', cursor: 'pointer', transition: 'opacity 0.2s ease' }}
                 onMouseEnter={e => (e.currentTarget.style.opacity = '0.75')}
                 onMouseLeave={e => (e.currentTarget.style.opacity = '1')}
               >

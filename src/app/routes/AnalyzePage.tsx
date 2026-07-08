@@ -112,7 +112,7 @@ function AnalysisResults({
       <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '2fr 3fr', gap: isMobile ? '32px' : '52px', alignItems: 'start' }}>
 
         {/* Image */}
-        <div style={{ borderRadius: '16px', overflow: 'hidden', aspectRatio: '2/3', background: '#111', position: isMobile ? 'relative' : 'sticky', top: isMobile ? undefined : '100px', maxHeight: isMobile ? '360px' : 'none' }}>
+        <div style={{ borderRadius: '16px', overflow: 'hidden', background: '#111', height: isMobile ? '280px' : undefined, aspectRatio: isMobile ? undefined : '2/3', position: isMobile ? 'relative' : 'sticky', top: isMobile ? undefined : '100px' }}>
           <img src={imageUrl} alt={name ?? 'Met Gala look'} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
         </div>
 
@@ -121,7 +121,7 @@ function AnalysisResults({
           {/* Score + verdict + identity */}
           <div style={{ display: 'flex', alignItems: 'flex-start', gap: '20px' }}>
             <ScoreWheel score={analysis.score} verdict={analysis.verdict} />
-            <div style={{ paddingTop: '6px' }}>
+            <div style={{ paddingTop: '6px', minWidth: 0, flex: 1 }}>
               <span style={{
                 display: 'inline-block', fontSize: '10px', letterSpacing: '0.16em',
                 textTransform: 'uppercase', padding: '4px 12px', borderRadius: '100px',
@@ -130,7 +130,7 @@ function AnalysisResults({
                 {analysis.verdict}
               </span>
               {name && (
-                <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: '28px', fontWeight: 300, color: '#fff', lineHeight: 1.1, marginBottom: '5px' }}>
+                <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: isMobile ? '22px' : '28px', fontWeight: 300, color: '#fff', lineHeight: 1.1, marginBottom: '5px' }}>
                   {name}
                 </div>
               )}

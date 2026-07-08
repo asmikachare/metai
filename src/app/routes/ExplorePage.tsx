@@ -32,7 +32,7 @@ export function ExplorePage() {
         <div style={{ maxWidth: '680px' }}>
           <h1 style={{
             fontFamily: "'Cormorant Garamond',serif",
-            fontSize: 'clamp(44px,6vw,88px)', fontWeight: 300,
+            fontSize: 'clamp(36px,8vw,88px)', fontWeight: 300,
             lineHeight: 1.08, letterSpacing: '-0.02em', marginBottom: '24px',
           }}>
             From red carpet<br />to verdict in<br /><em style={{ color: '#fb923c', fontStyle: 'italic' }}>seconds.</em>
@@ -78,6 +78,7 @@ export function ExplorePage() {
       {/* Archive — teaser */}
       <div id="archive" style={{ padding: isMobile ? '60px 24px' : '100px 48px' }}>
         <div style={{ maxWidth: '1100px', margin: '0 auto' }}>
+          <div style={{ overflow: 'hidden', marginBottom: '28px' }}>
           <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: '52px', flexWrap: 'wrap', gap: '20px' }}>
             <div>
               <div style={{ fontSize: '11px', letterSpacing: '0.22em', color: '#666', textTransform: 'uppercase', marginBottom: '16px' }}>The archive</div>
@@ -94,7 +95,7 @@ export function ExplorePage() {
           </div>
 
           {/* 3 featured year cards */}
-          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1.4fr 1fr 1fr', gap: '12px', marginBottom: '28px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1.4fr 1fr 1fr', gap: '12px' }}>
             {[
               { year: '2026', theme: 'Fashion as Art', desc: 'Live now. Score looks in real time as the season unfolds.', tag: 'Live', tagColor: '#fb923c', tagBg: 'rgba(251,146,60,0.1)', active: true },
               { year: '2019', theme: 'Camp: Notes on Fashion', desc: 'The most memed Met ever. Drag, kitsch, maximalism — and very few people got it right.', tag: 'Iconic', tagColor: '#c084fc', tagBg: 'rgba(192,132,252,0.1)', active: false },
@@ -129,9 +130,10 @@ export function ExplorePage() {
               </div>
             ))}
           </div>
+          </div>{/* end overflow:hidden card wrapper */}
 
           {/* Scrollable year strip */}
-          <div style={{ overflowX: 'auto', paddingBottom: '4px', scrollbarWidth: 'none' }}>
+          <div style={{ position: 'relative', overflowX: 'auto', paddingBottom: '4px', scrollbarWidth: 'none' }}>
             <div style={{ display: 'flex', gap: '8px', width: 'max-content' }}>
               {[2025,2024,2023,2022,2021,2017,2016,2015,2014,2013,2012,2011,2010,'2000s','1990s','1980s','1970s','History'].map(y => (
                 <button
@@ -159,14 +161,14 @@ export function ExplorePage() {
         <h2 style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 'clamp(36px,4vw,60px)', fontWeight: 300, lineHeight: 1.15, marginBottom: '60px', maxWidth: '560px' }}>
           From red carpet to verdict in seconds.
         </h2>
-        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr 1fr' : 'repeat(4,1fr)', gap: '1px', background: '#2a2a2a', border: '0.5px solid #2a2a2a' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(4,1fr)', gap: '1px', background: '#2a2a2a', border: '0.5px solid #2a2a2a' }}>
           {[
             { num: '01', title: 'Drop or search', desc: 'Upload a screenshot or type any celebrity name. We find the look automatically.' },
             { num: '02', title: 'We pull the look', desc: 'Our AI searches the internet for their exact outfit — brand, designer, every detail.' },
             { num: '03', title: 'Score & critique', desc: 'The look is scored 0–10 against the year\'s theme with a full fashion critique.' },
             { num: '04', title: 'See the alternative', desc: 'We surface real archive pieces and emerging brands that would have nailed the theme.' },
           ].map((step, i) => (
-            <div key={i} style={{ background: '#080808', padding: '36px 32px' }}>
+            <div key={i} style={{ background: '#080808', padding: isMobile ? '24px' : '36px 32px' }}>
               <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: '48px', fontWeight: 300, color: '#333', lineHeight: 1, marginBottom: '20px' }}>{step.num}</div>
               <div style={{ fontSize: '15px', fontWeight: 500, color: '#fff', marginBottom: '10px' }}>{step.title}</div>
               <div style={{ fontSize: '13px', color: '#999', lineHeight: 1.6 }}>{step.desc}</div>
@@ -189,13 +191,13 @@ export function ExplorePage() {
             { num: '4.1', color: '#f87171', name: 'Jennie (BLACKPINK) — Chanel', detail: 'Gorgeous gown. Reads as campaign look. Beautiful fashion, not art.', badge: 'Off Theme', badgeBg: 'rgba(248,113,113,0.1)', badgeColor: '#f87171' },
             { num: '2.3', color: '#f87171', name: 'Kendall Jenner — Gap', detail: 'Gap is a commercial brand. This belongs at a brand launch, not the Met.', badge: 'Miss', badgeBg: 'rgba(248,113,113,0.1)', badgeColor: '#f87171' },
           ].map((score, i) => (
-            <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '20px', padding: '20px 0', borderBottom: '0.5px solid #111', ...(i === 0 && { borderTop: '0.5px solid #111' }) }}>
-              <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: '28px', fontWeight: 300, minWidth: '52px', color: score.color }}>{score.num}</div>
-              <div style={{ flex: 1 }}>
+            <div key={i} style={{ display: 'flex', alignItems: 'center', gap: isMobile ? '12px' : '20px', padding: '20px 0', borderBottom: '0.5px solid #111', ...(i === 0 && { borderTop: '0.5px solid #111' }) }}>
+              <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: '28px', fontWeight: 300, minWidth: '52px', flexShrink: 0, color: score.color }}>{score.num}</div>
+              <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontSize: '15px', fontWeight: 500, color: '#fff', marginBottom: '3px' }}>{score.name}</div>
                 <div style={{ fontSize: '13px', color: '#999' }}>{score.detail}</div>
               </div>
-              <span style={{ fontSize: '11px', padding: '4px 12px', borderRadius: '100px', letterSpacing: '0.06em', background: score.badgeBg, color: score.badgeColor }}>{score.badge}</span>
+              <span style={{ fontSize: '11px', padding: '4px 12px', borderRadius: '100px', letterSpacing: '0.06em', background: score.badgeBg, color: score.badgeColor, flexShrink: 0 }}>{score.badge}</span>
             </div>
           ))}
         </div>
